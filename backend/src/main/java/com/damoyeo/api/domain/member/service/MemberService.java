@@ -85,4 +85,16 @@ public interface MemberService {
      * @return 저장된 이미지 URL
      */
     String uploadProfileImage(String email, org.springframework.web.multipart.MultipartFile file);
+
+    /**
+     * 위치 정보 업데이트
+     *
+     * 회원의 위치 정보를 업데이트합니다.
+     *
+     * @param email 회원 이메일
+     * @param lat 위도
+     * @param lng 경도
+     * @param address 주소
+     */
+    void updateLocation(String email, Double lat, Double lng, String address);
 }

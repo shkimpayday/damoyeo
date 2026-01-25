@@ -203,6 +203,23 @@ public class MemberServiceImpl implements MemberService {
     }
 
     /**
+     * 위치 정보 업데이트
+     *
+     * @param email 회원 이메일
+     * @param lat 위도
+     * @param lng 경도
+     * @param address 주소
+     */
+    @Override
+    public void updateLocation(String email, Double lat, Double lng, String address) {
+        Member member = memberRepository.getWithRoles(email)
+                .orElseThrow(() -> CustomException.notFound("회원을 찾을 수 없습니다."));
+
+        member.changeLocation(lat, lng, address);
+        log.info("Location updated for member: {}", email);
+    }
+
+    /**
      * Entity → DTO 변환 헬퍼 메서드
      *
      * [주의] password는 포함하지 않음 (보안)

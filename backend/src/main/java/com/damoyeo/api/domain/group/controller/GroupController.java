@@ -419,33 +419,4 @@ public class GroupController {
         return ResponseEntity.ok(Map.of("result", "SUCCESS"));
     }
 
-
-    /**
-     * 정모 불러오기
-     *
-     * [프론트엔드 요청]
-     * GET /api/groups/1/meetings
-     */
-    @GetMapping("/{id}/meetings")
-    @Operation(summary = "정모 리스트 불러오기")
-    public ResponseEntity<List<GroupMemberDTO>> getMeetingLists(
-            @PathVariable Long id,
-            @AuthenticationPrincipal MemberDTO member) {
-        return ResponseEntity.ok(groupService.getPendingMembers(id, member.getEmail()));
-    }
-
-    /**
-     * 정모 생성
-     * [권한] 모임장(OWNER) 또는 운영진(MANAGER)
-     *
-     * [프론트엔드 요청]
-     * POST /api/groups/1/meetings
-     */
-    @PostMapping("/{id}/meetings")
-    @Operation(summary = "정모 생성")
-    public ResponseEntity<List<GroupMemberDTO>> createMeeting(
-            @PathVariable Long id,
-            @AuthenticationPrincipal MemberDTO member) {
-        return ResponseEntity.ok(groupService.getPendingMembers(id, member.getEmail()));
-    }
 }

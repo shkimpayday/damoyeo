@@ -16,7 +16,7 @@ export const getMeetingsByGroup = async (
   groupId: number
 ): Promise<MeetingListDTO[]> => {
   const res = await jwtAxios.get(
-    `${ENV.API_URL}/api/groups/${groupId}/meetings`
+    `${ENV.API_URL}/api/meetings/group/${groupId}`
   );
   return res.data;
 };
@@ -29,8 +29,8 @@ export const createMeeting = async (
   request: MeetingCreateRequest
 ): Promise<MeetingDTO> => {
   const res = await jwtAxios.post(
-    `${ENV.API_URL}/api/groups/${groupId}/meetings`,
-    request
+    `${ENV.API_URL}/api/meetings`,
+    { ...request, groupId }
   );
   return res.data;
 };
@@ -76,7 +76,8 @@ export const attendMeeting = async (
 ): Promise<{ message: string }> => {
   const res = await jwtAxios.post(
     `${ENV.API_URL}/api/meetings/${meetingId}/attend`,
-    request
+    null,
+    { params: { status: request.status } }
   );
   return res.data;
 };

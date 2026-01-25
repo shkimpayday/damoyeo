@@ -301,13 +301,16 @@ function GroupDetailPage() {
                   탈퇴하기
                 </button>
               )}
-            <button
-              onClick={handleJoin}
-              disabled={joinMutation.isPending}
-              className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors disabled:opacity-50 shadow-lg shadow-primary-500/25"
-            >
-              모임수정
-            </button>
+
+
+              {group.myRole && (group.myRole === "OWNER" || group.myRole === "MANAGER") && (
+              <Link
+                to={`/groups/${group.id}/manage`}
+                className="w-full py-3.5 bg-primary-500 text-center text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors disabled:opacity-50 shadow-lg shadow-primary-500/25"
+              >
+                모임수정
+              </Link>
+            )}  
           </div>
           ) : (
             <button

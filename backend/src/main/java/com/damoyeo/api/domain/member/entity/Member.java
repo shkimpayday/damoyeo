@@ -94,6 +94,21 @@ public class Member extends BaseEntity {
     private boolean social;
 
     /**
+     * 사용자 위치 - 위도
+     */
+    private Double lat;
+
+    /**
+     * 사용자 위치 - 경도
+     */
+    private Double lng;
+
+    /**
+     * 사용자 주소
+     */
+    private String address;
+
+    /**
      * 권한 목록
      *
      * @ElementCollection: 별도 테이블(member_role)에 저장
@@ -135,5 +150,12 @@ public class Member extends BaseEntity {
     /** 자기소개 변경 */
     public void changeIntroduction(String introduction) {
         this.introduction = introduction;
+    }
+
+    /** 위치 변경 */
+    public void changeLocation(Double lat, Double lng, String address) {
+        this.lat = lat;
+        this.lng = lng;
+        this.address = address;
     }
 }

@@ -34,7 +34,8 @@ src/main/java/com/damoyeo/api/
 │   ├── group/                  # 모임 CRUD & 멤버 관리
 │   ├── meeting/                # 정모 (정기모임)
 │   ├── category/               # 18개 카테고리
-│   └── notification/           # 알림
+│   ├── notification/           # 알림
+│   └── event/                  # 이벤트/배너 (NEW)
 └── global/                     # Cross-cutting concerns
     ├── common/                 # BaseEntity, PageDTO
     ├── config/                 # SecurityConfig, WebConfig
@@ -83,6 +84,8 @@ Request → JWTCheckFilter → Controller → Service → Repository
 - `POST /api/member/signup`
 - `GET /api/categories`
 - `GET /api/member/kakao`
+- `GET /api/events/banners` - 활성 배너 목록
+- `GET /api/events/{id}` - 이벤트 상세
 - Swagger UI (`/swagger-ui.html`)
 
 ## Database
@@ -105,6 +108,8 @@ Swagger UI: http://localhost:8080/swagger-ui.html
 | `GlobalExceptionHandler.java` | Maps exceptions to HTTP responses |
 | `DataInitializer.java` | Seeds 18 categories on startup |
 | `BaseEntity.java` | Auditing fields (createdAt, modifiedAt) |
+| `EventController.java` | 이벤트/배너 REST API (NEW) |
+| `EventServiceImpl.java` | 이벤트 비즈니스 로직 (NEW) |
 
 ## Code Conventions
 
@@ -112,6 +117,24 @@ Swagger UI: http://localhost:8080/swagger-ui.html
 - DTOs: `{Name}CreateRequest`, `{Name}ModifyRequest`, `{Name}DTO`
 - All controllers annotated with `@Tag` and `@Operation` for Swagger
 - Use `@Transactional(readOnly = true)` for query-only methods
+
+## Event API Endpoints (NEW)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/events/banners` | X | 활성 배너 목록 (시간 기반 필터링) |
+| GET | `/api/events/{id}` | X | 이벤트 상세 조회 |
+| GET | `/api/events` | O (ADMIN) | 전체 이벤트 목록 |
+| POST | `/api/events` | O (ADMIN) | 이벤트 생성 |
+| DELETE | `/api/events/{id}` | O (ADMIN) | 이벤트 삭제 |
+| PATCH | `/api/events/{id}/toggle` | O (ADMIN) | 이벤트 활성화 토글 |
+
+### Event Entity 특징
+- **시간 기반 표시**: `startDate` ~ `endDate` 범위 내에만 배너 표시
+- **활성화 플래그**: `isActive`로 관리자가 수동 비활성화 가능
+- **정렬 순서**: `displayOrder`로 배너 순서 관리
+- **마크다운 지원**: `content` 필드에 마크다운 콘텐츠 저장
+- **태그 시스템**: 쉼표 구분 태그로 분류
 
 ## DTO 구조 (중첩 객체 패턴)
 
@@ -202,4 +225,41 @@ public class MeetingAttendeeDTO {
     private String status;               // ATTENDING, MAYBE, NOT_ATTENDING
     private Boolean checkedIn;
     private LocalDateTime registeredAt;
+}
+```
+
+### EventDTO (NEW)
+```java
+// 이벤트 타입 enum
+public enum EventType {
+    PROMOTION, NOTICE, SPECIAL, FEATURE
+}
+
+// 배너 목록용 (가벼운 DTO)
+public class EventBannerDTO {
+    private Long id;
+    private String title;
+    private String description;
+    private String imageUrl;
+    private String linkUrl;
+    private EventType type;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+}
+
+// 이벤트 상세용 (전체 DTO)
+public class EventDetailDTO {
+    private Long id;
+    private String title;
+    private String description;
+    private String content;              // 마크다운 지원
+    private String imageUrl;
+    private String linkUrl;
+    private EventType type;
+    private List<String> tags;
+    private Boolean isActive;
+    private Integer displayOrder;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private LocalDateTime createdAt;
 }

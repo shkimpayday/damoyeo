@@ -192,4 +192,31 @@ public class MemberController {
         String imageUrl = memberService.uploadProfileImage(member.getEmail(), file);
         return ResponseEntity.ok(Map.of("imageUrl", imageUrl));
     }
+
+    /**
+     * 위치 정보 업데이트
+     *
+     * [프론트엔드 요청]
+     * PUT /api/member/location
+     * Authorization: Bearer {accessToken}
+     * {
+     *   "lat": 37.5665,
+     *   "lng": 126.9780,
+     *   "address": "서울특별시 중구"
+     * }
+     */
+    @PutMapping("/location")
+    @Operation(summary = "위치 정보 업데이트", description = "회원의 위치 정보를 업데이트합니다.")
+    public ResponseEntity<Map<String, String>> updateLocation(
+            @AuthenticationPrincipal MemberDTO member,
+            @RequestBody Map<String, Object> request) {
+        log.info("Update location for member: {}", member.getEmail());
+
+        Double lat = request.get("lat") != null ? ((Number) request.get("lat")).doubleValue() : null;
+        Double lng = request.get("lng") != null ? ((Number) request.get("lng")).doubleValue() : null;
+        String address = (String) request.get("address");
+
+        memberService.updateLocation(member.getEmail(), lat, lng, address);
+        return ResponseEntity.ok(Map.of("message", "위치 정보가 업데이트되었습니다."));
+    }
 }

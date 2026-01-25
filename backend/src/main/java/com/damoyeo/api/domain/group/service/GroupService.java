@@ -302,4 +302,19 @@ public interface GroupService {
     List<GroupMemberDTO> getPendingMembers(Long groupId, String ownerEmail);
 
 
+    //// 정모 목록용 DTO (간소화)
+    //export interface MeetingListDTO {
+    //  id: number;
+    //  groupId: number;
+    //  groupName: string;
+    //  title: string;
+    //  address: string;
+    //  meetingDate: string;
+    //  maxAttendees: number;
+    //  currentAttendees: number;
+    //  status: MeetingStatus;
+    //}
+
+
+
 }

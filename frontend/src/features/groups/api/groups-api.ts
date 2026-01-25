@@ -127,16 +127,17 @@ export const getGroupMembers = async (
 };
 
 /**
- * 멤버 역할/상태 변경 (모임장/운영진용)
+ * 멤버 역할 변경 (모임장용)
  */
 export const updateMemberRole = async (
   groupId: number,
   memberId: number,
   request: MemberRoleUpdateRequest
 ): Promise<{ message: string }> => {
-  const res = await jwtAxios.put(
-    `${prefix}/${groupId}/members/${memberId}`,
-    request
+  const res = await jwtAxios.patch(
+    `${prefix}/${groupId}/members/${memberId}/role`,
+    null,
+    { params: { role: request.role } }
   );
   return res.data;
 };

@@ -62,6 +62,7 @@ cd backend
 | Axios | 1.13 | HTTP 클라이언트 |
 | Tailwind CSS | 4 | 스타일링 |
 | react-cookie | 8 | 쿠키 관리 |
+| MSW | 2.12 | API 모킹 (개발용) |
 
 ### Backend
 | 기술 | 버전 | 용도 |
@@ -236,6 +237,31 @@ type NotificationType =
   | 'MEETING_CANCELLED';// 정모 취소 (referenceType: MEETING)
 ```
 
+### Event (이벤트/배너)
+```typescript
+type EventType = 'PROMOTION' | 'NOTICE' | 'SPECIAL' | 'FEATURE';
+
+interface EventBannerDTO {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl: string;
+  linkUrl?: string;
+  type: EventType;
+  startDate: string;
+  endDate: string;
+}
+
+interface EventDetailDTO extends EventBannerDTO {
+  content: string;        // 마크다운 지원
+  tags: string[];
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+}
+```
+**이벤트 타입**: PROMOTION (프로모션), NOTICE (공지), SPECIAL (특별 이벤트), FEATURE (신기능 소개)
+
 ---
 
 ## API 엔드포인트
@@ -300,6 +326,16 @@ type NotificationType =
 | PUT | `/api/notifications/{id}/read` | 읽음 처리 | O |
 | PUT | `/api/notifications/read-all` | 전체 읽음 | O |
 | GET | `/api/notifications/unread-count` | 안 읽은 수 | O |
+
+### 이벤트 API
+| Method | Endpoint | Description | 인증 |
+|--------|----------|-------------|------|
+| GET | `/api/events/banners` | 활성 배너 목록 | X |
+| GET | `/api/events/{id}` | 이벤트 상세 | X |
+| GET | `/api/events` | 전체 이벤트 목록 (관리자) | O (ADMIN) |
+| POST | `/api/events` | 이벤트 생성 | O (ADMIN) |
+| DELETE | `/api/events/{id}` | 이벤트 삭제 | O (ADMIN) |
+| PATCH | `/api/events/{id}/toggle` | 이벤트 활성화 토글 | O (ADMIN) |
 
 ---
 
@@ -381,9 +417,11 @@ frontend/src/
 ## 라우팅 구조
 
 ```
-/                          → MainPage (홈 피드)
+/                          → MainPage (홈 피드 + 배너 슬라이더)
 ├── /search                → SearchPage (통합 검색)
 ├── /notifications         → NotificationPage
+│
+├── /events/:eventId       → EventDetailPage (이벤트 상세)
 │
 ├── /groups                → Redirect to /groups/list
 │   ├── /groups/list       → GroupListPage
@@ -448,6 +486,7 @@ frontend/src/
 - [x] 멤버 관리 (역할 변경, 강퇴, 가입 승인/거절)
 - [x] 모임/정모 수정 기능
 - [x] 알림 시스템 (회원가입 환영 알림, 폴링 기반)
+- [x] 이벤트/배너 시스템 (메인 배너 슬라이더, 이벤트 상세 페이지)
 - [ ] 실시간 채팅 (WebSocket/STOMP)
 - [ ] 실시간 알림 (SSE/WebSocket)
 
@@ -474,7 +513,8 @@ backend/src/main/java/com/damoyeo/api/
 │   ├── meeting/                     # 정모
 │   ├── notification/                # 알림
 │   ├── category/                    # 카테고리
-│   └── email/                       # 이메일 인증
+│   ├── email/                       # 이메일 인증
+│   └── event/                       # 이벤트/배너 (NEW)
 │
 ├── global/                          # 공통 모듈
 │   ├── config/                      # 설정
@@ -520,5 +560,6 @@ JWT 검증을 **건너뛰는** 경로:
 - `/api/member/login`, `/api/member/signup` - 인증 없이 접근
 - `/api/member/refresh` - 토큰 갱신
 - `/api/categories` - 공개 API
+- `/api/events/banners`, `/api/events/{id}` - 공개 이벤트 API
 - `/uploads/**` - 정적 파일 (프로필 이미지 등)
 - `/swagger-ui/**`, `/v3/api-docs/**` - API 문서

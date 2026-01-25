@@ -68,6 +68,7 @@ damoyeo/
 | ESLint | 9.39.1 | 코드 린팅 |
 | @tailwindcss/vite | 4.1.18 | Vite 플러그인 |
 | TanStack Query DevTools | 5.91.2 | 디버깅 |
+| MSW | 2.12.7 | API 모킹 (개발/테스트) |
 
 ### 환경 변수 (.env)
 
@@ -96,7 +97,8 @@ frontend/
 │   │           ├── notification-page.tsx
 │   │           ├── auth/             # 인증 페이지
 │   │           ├── groups/           # 모임 페이지
-│   │           └── meetings/         # 정모 페이지
+│   │           ├── meetings/         # 정모 페이지
+│   │           └── events/           # 이벤트 페이지 (NEW)
 │   │
 │   ├── components/                   # 공유 컴포넌트
 │   │   ├── layout/                   # 레이아웃
@@ -128,10 +130,20 @@ frontend/
 │   │   │   ├── components/
 │   │   │   ├── hooks/
 │   │   │   └── types/
-│   │   └── notifications/            # 알림
+│   │   ├── notifications/            # 알림
+│   │   │   ├── api/
+│   │   │   ├── stores/
+│   │   │   └── types/
+│   │   └── events/                   # 이벤트/배너 (NEW)
 │   │       ├── api/
-│   │       ├── stores/
+│   │       ├── components/
+│   │       ├── hooks/
 │   │       └── types/
+│   │
+│   ├── mocks/                        # MSW 모킹 (NEW)
+│   │   ├── browser.ts                # MSW 브라우저 설정
+│   │   ├── handlers.ts               # API 핸들러
+│   │   └── data.ts                   # 목 데이터
 │   │
 │   ├── lib/                          # 라이브러리 설정
 │   │   ├── axios.ts                  # Axios 인스턴스 (JWT 인터셉터)
@@ -171,18 +183,18 @@ frontend/
 │                     ▼           ▼               ▼               │
 │  ┌─────────────────────────────────────────────────────────────┤
 │  │                    Features (기능 모듈)                      │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
-│  │  │   auth   │  │  groups  │  │ meetings │  │  notif.  │    │
-│  │  │ ───────  │  │ ───────  │  │ ───────  │  │ ───────  │    │
-│  │  │ api/     │  │ api/     │  │ api/     │  │ api/     │    │
-│  │  │ hooks/   │  │ hooks/   │  │ hooks/   │  │ stores/  │    │
-│  │  │ stores/  │  │ comps/   │  │ comps/   │  │ types/   │    │
-│  │  │ comps/   │  │ types/   │  │ types/   │  │          │    │
-│  │  │ types/   │  │          │  │          │  │          │    │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘    │
-│  └───────┼─────────────┼────────────┼─────────────┼───────────┤
-│          │             │            │             │            │
-│          ▼             ▼            ▼             ▼            │
+│  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐   │
+│  │  │  auth  │ │ groups │ │meetings│ │ notif. │ │ events │   │
+│  │  │ ────── │ │ ────── │ │ ────── │ │ ────── │ │ ────── │   │
+│  │  │ api/   │ │ api/   │ │ api/   │ │ api/   │ │ api/   │   │
+│  │  │ hooks/ │ │ hooks/ │ │ hooks/ │ │ stores/│ │ hooks/ │   │
+│  │  │ stores/│ │ comps/ │ │ comps/ │ │ types/ │ │ comps/ │   │
+│  │  │ comps/ │ │ types/ │ │ types/ │ │        │ │ types/ │   │
+│  │  │ types/ │ │        │ │        │ │        │ │        │   │
+│  │  └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └───┬────┘   │
+│  └───────┼─────────┼──────────┼──────────┼──────────┼─────────┤
+│          │         │          │          │          │          │
+│          ▼         ▼          ▼          ▼          ▼          │
 │  ┌─────────────────────────────────────────────────────────────┤
 │  │                    Shared Libraries (lib/)                   │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
@@ -226,9 +238,11 @@ frontend/
 ### 라우트 맵
 
 ```
-/                              → MainPage (홈 피드)
+/                              → MainPage (홈 피드 + 배너 슬라이더)
 ├── /search                    → SearchPage (통합 검색)
 ├── /notifications             → NotificationPage
+│
+├── /events/:eventId           → EventDetailPage (이벤트 상세)
 │
 ├── /groups
 │   ├── /groups/list           → GroupListPage
@@ -358,6 +372,22 @@ const LoginPage = lazy(() => import("./pages/auth/login-page"));
 // 모임명, 제목, 날짜, 장소, 참석자 수, 상태 뱃지
 ```
 
+#### BannerSlider (NEW)
+
+```tsx
+<BannerSlider banners={eventBanners} />
+// 메인 페이지 상단 자동 회전 배너 슬라이더
+// 수동 네비게이션, 페이지네이션 인디케이터 포함
+```
+
+#### TopPromoBanner (NEW)
+
+```tsx
+<TopPromoBanner />
+// 닫기 가능한 프로모션 배너
+// localStorage로 24시간 숨김 유지
+```
+
 ---
 
 ## 7. API 레이어
@@ -464,6 +494,13 @@ jwtAxios.interceptors.response.use(
 | `markAsRead` | PUT | `/api/notifications/{id}/read` | 읽음 처리 |
 | `markAllAsRead` | PUT | `/api/notifications/read-all` | 전체 읽음 |
 
+#### 이벤트 API (NEW)
+
+| 함수 | Method | Endpoint | 설명 |
+|-----|--------|----------|------|
+| `getBanners` | GET | `/api/events/banners` | 활성 배너 목록 |
+| `getDetail` | GET | `/api/events/{id}` | 이벤트 상세 |
+
 ---
 
 ## 8. 상태 관리
@@ -564,6 +601,16 @@ const { data: meeting } = useMeetingDetail(meetingId);
 
 // 참석 Mutation
 const attendMeeting = useAttendMeeting();
+```
+
+#### Events Hooks (NEW)
+
+```tsx
+// 활성 배너 목록
+const { data: banners } = useEventBanners();
+
+// 이벤트 상세
+const { data: event } = useEventDetail(eventId);
 ```
 
 ---
@@ -816,6 +863,33 @@ interface NotificationDTO {
 }
 ```
 
+### 이벤트 타입 (NEW)
+
+```tsx
+// features/events/types/index.ts
+
+type EventType = "PROMOTION" | "NOTICE" | "SPECIAL" | "FEATURE";
+
+interface EventBanner {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl: string;
+  linkUrl?: string;
+  type: EventType;
+  startDate: string;
+  endDate: string;
+}
+
+interface EventDetail extends EventBanner {
+  content: string;        // 마크다운 지원
+  tags: string[];
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+}
+```
+
 ---
 
 ## 10. 인증 플로우
@@ -1005,13 +1079,15 @@ npm run preview
 - [x] 검색/필터
 - [x] 카테고리 시스템
 
-### Phase 2 - 핵심 기능 (완료)
+### Phase 2 - 핵심 기능 (진행 중)
 
 - [x] 프로필 수정 기능 (이미지 업로드, 닉네임/소개 변경)
 - [x] 위치 기반 근처 모임 검색 (Geolocation API)
 - [x] 멤버 관리 (역할 변경, 강퇴, 가입 승인/거절)
 - [x] 모임/정모 수정 기능
 - [x] 무한 스크롤 (Intersection Observer)
+- [x] 이벤트/배너 시스템 (메인 배너 슬라이더, 이벤트 상세 페이지)
+- [x] MSW API 모킹 설정 (개발/테스트용)
 - [ ] 실시간 채팅 (WebSocket/STOMP)
 - [ ] 알림 시스템 완성
 
@@ -1038,6 +1114,19 @@ npm run preview
 ### 정모 기능
 - `src/app/routes/pages/meetings/edit-page.tsx` - 정모 수정 페이지
 
+### 이벤트/배너 기능 (NEW)
+- `src/features/events/api/events-api.ts` - 이벤트 API 클라이언트
+- `src/features/events/hooks/use-events.ts` - 이벤트 Query hooks
+- `src/features/events/components/banner-slider.tsx` - 메인 배너 슬라이더
+- `src/features/events/components/top-promo-banner.tsx` - 프로모션 배너
+- `src/features/events/types/index.ts` - 이벤트 타입 정의
+- `src/app/routes/pages/events/detail-page.tsx` - 이벤트 상세 페이지
+
+### MSW 모킹 (NEW)
+- `src/mocks/browser.ts` - MSW 브라우저 설정
+- `src/mocks/handlers.ts` - API 요청 핸들러
+- `src/mocks/data.ts` - 목 데이터 (DEMO_EVENT_BANNERS 등)
+
 ---
 
-> 마지막 업데이트: 2026-01-19
+> 마지막 업데이트: 2026-01-25
