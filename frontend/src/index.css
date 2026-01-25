@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/* Custom color theme using CSS variables - Munto Teal Style */
+@theme {
+  --color-primary-50: #E6FCF5;
+  --color-primary-100: #C3FAE8;
+  --color-primary-200: #96F2D7;
+  --color-primary-300: #63E6BE;
+  --color-primary-400: #38D9A9;
+  --color-primary-500: #12B886;
+  --color-primary-600: #0CA678;
+  --color-primary-700: #099268;
+  --color-primary-800: #087F5B;
+  --color-primary-900: #066349;
+}
+
+/* Base styles */
+body {
+  margin: 0;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #FAFAFA;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area for mobile */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ===== 문토 스타일: 전체 너비 레이아웃 ===== */
+
+/* App wrapper - full width */
+.app-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #FAFAFA;
+}
+
+/* Full width header area */
+.app-header {
+  width: 100%;
+  background-color: white;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Main content - full width with max-width for readability */
+.app-main {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Content container - centered with padding (문토 스타일) */
+.app-content {
+  width: 100%;
+  max-width: 1200px; /* 문토 스타일: 중앙에 모임 */
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Desktop: 더 넓은 여백으로 중앙 집중 */
+@media (min-width: 768px) {
+  .app-content {
+    padding: 0 40px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .app-content {
+    padding: 0 48px;
+  }
+}
+
+
+/* Grid layouts for different screen sizes (문토 스타일) */
+.grid-groups {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+  .grid-groups {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-groups {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Category grid (문토 스타일: 5개씩) */
+.grid-categories {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+@media (min-width: 640px) {
+  .grid-categories {
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-categories {
+    grid-template-columns: repeat(10, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Section spacing */
+.section-spacing {
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+@media (min-width: 768px) {
+  .section-spacing {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+}
+
+/* Full bleed sections (banners, etc) */
+.full-bleed {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+}
