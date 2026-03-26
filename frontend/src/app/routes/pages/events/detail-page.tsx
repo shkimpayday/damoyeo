@@ -57,7 +57,7 @@ function EventDetailPage() {
       </div>
 
       {/* 이벤트 정보 */}
-      <div className="app-content">
+      <div>
         <div className="py-4">
         {/* 태그 */}
         {event.tags && event.tags.length > 0 && (

@@ -214,7 +214,6 @@ public class GroupMemberDTO {
     private Long id;
     private MemberSummaryDTO member;     // 중첩 객체
     private String role;                 // OWNER, MANAGER, MEMBER
-    private String status;               // PENDING, APPROVED, REJECTED, BANNED
     private LocalDateTime joinedAt;
 }
 

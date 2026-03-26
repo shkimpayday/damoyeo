@@ -13,6 +13,8 @@ import com.damoyeo.api.domain.meeting.repository.MeetingRepository;
 import com.damoyeo.api.domain.member.dto.MemberSummaryDTO;
 import com.damoyeo.api.domain.member.entity.Member;
 import com.damoyeo.api.domain.member.repository.MemberRepository;
+import com.damoyeo.api.domain.notification.entity.NotificationType;
+import com.damoyeo.api.domain.notification.service.NotificationService;
 import com.damoyeo.api.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +78,9 @@ public class MeetingServiceImpl implements MeetingService {
     /** 회원 레포지토리 (이메일로 회원 조회) */
     private final MemberRepository memberRepository;
 
+    /** 알림 서비스 (정모 관련 알림 발송) */
+    private final NotificationService notificationService;
+
     // ========================================================================
     // CRUD 기본 기능
     // ========================================================================
@@ -109,7 +114,7 @@ public class MeetingServiceImpl implements MeetingService {
                 .group(group)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .location(request.getLocation())
+                .location(request.getAddress())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .meetingDate(request.getMeetingDate())
@@ -130,6 +135,9 @@ public class MeetingServiceImpl implements MeetingService {
                 .build();
         attendeeRepository.save(creatorAttendee);
 
+        // 7. 모임 전체 멤버에게 새 정모 알림 발송 (생성자 제외)
+        sendNewMeetingNotification(group, saved, creator);
+
         log.info("Meeting created: {} by {}", saved.getTitle(), email);
         return entityToDTO(saved, email);
     }
@@ -137,19 +145,34 @@ public class MeetingServiceImpl implements MeetingService {
     /**
      * 정모 상세 조회
      *
+     * [권한 체크]
+     * 모임에 가입한 멤버만 정모 상세를 볼 수 있습니다.
+     * 비로그인 또는 모임 멤버가 아닌 경우 403 에러를 반환합니다.
+     *
      * @Transactional(readOnly = true): 조회 전용 트랜잭션
      * - 더티 체킹 비활성화로 성능 향상
      * - DB 복제본(slave) 사용 가능
      *
      * @param id 정모 ID
      * @param email 조회하는 사용자의 이메일 (null 가능)
-     * @return 정모 상세 정보 (myStatus 포함)
+     * @return 정모 상세 정보 (myStatus, canEdit 포함)
+     * @throws CustomException 비로그인 또는 모임 멤버가 아닌 경우 403 에러
      */
     @Override
     @Transactional(readOnly = true)
     public MeetingDTO getById(Long id, String email) {
         Meeting meeting = meetingRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> CustomException.notFound("정모를 찾을 수 없습니다."));
+
+        // 비로그인 사용자는 정모 상세를 볼 수 없음
+        if (email == null) {
+            throw CustomException.forbidden("모임 멤버만 정모를 볼 수 있습니다. 로그인해주세요.");
+        }
+
+        // 모임 멤버인지 확인
+        Member member = getMemberByEmail(email);
+        checkGroupMember(meeting.getGroup().getId(), member.getId());
+
         return entityToDTO(meeting, email);
     }
 
@@ -174,15 +197,24 @@ public class MeetingServiceImpl implements MeetingService {
         // 2. 권한 확인 (생성자 또는 모임 관리자)
         checkMeetingManager(meeting, email);
 
-        // 3. Partial Update: null이 아닌 필드만 업데이트
+        // 3. 장소/시간 변경 여부 추적 (알림 발송 여부 결정용)
+        boolean isLocationOrTimeChanged = false;
+        if (request.getAddress() != null && !request.getAddress().equals(meeting.getLocation())) {
+            isLocationOrTimeChanged = true;
+        }
+        if (request.getMeetingDate() != null && !request.getMeetingDate().equals(meeting.getMeetingDate())) {
+            isLocationOrTimeChanged = true;
+        }
+
+        // 4. Partial Update: null이 아닌 필드만 업데이트
         if (request.getTitle() != null) {
             meeting.changeTitle(request.getTitle());
         }
         if (request.getDescription() != null) {
             meeting.changeDescription(request.getDescription());
         }
-        if (request.getLocation() != null) {
-            meeting.changeLocation(request.getLocation(), request.getLatitude(), request.getLongitude());
+        if (request.getAddress() != null) {
+            meeting.changeLocation(request.getAddress(), request.getLatitude(), request.getLongitude());
         }
         if (request.getMeetingDate() != null) {
             meeting.changeMeetingDate(request.getMeetingDate());
@@ -197,7 +229,12 @@ public class MeetingServiceImpl implements MeetingService {
             meeting.changeStatus(MeetingStatus.valueOf(request.getStatus()));
         }
 
-        // 4. JPA 더티 체킹으로 자동 저장 (save() 호출 불필요)
+        // 5. 장소/시간이 변경된 경우 참석 예정자에게 알림 발송
+        if (isLocationOrTimeChanged) {
+            sendMeetingUpdatedNotification(meeting);
+        }
+
+        // 6. JPA 더티 체킹으로 자동 저장 (save() 호출 불필요)
         return entityToDTO(meeting, email);
     }
 
@@ -219,6 +256,9 @@ public class MeetingServiceImpl implements MeetingService {
         // 권한 확인 (생성자 또는 모임 관리자)
         checkMeetingManager(meeting, email);
 
+        // 참석 예정자에게 정모 취소 알림 발송 (상태 변경 전에 알림 발송)
+        sendMeetingCancelledNotification(meeting);
+
         // 상태를 CANCELLED로 변경 (소프트 삭제)
         meeting.changeStatus(MeetingStatus.CANCELLED);
         log.info("Meeting cancelled: {} by {}", meeting.getTitle(), email);
@@ -229,7 +269,7 @@ public class MeetingServiceImpl implements MeetingService {
     // ========================================================================
 
     /**
-     * 특정 모임의 정모 목록 조회
+     * 특정 모임의 정모 목록 조회 (전체)
      *
      * @param groupId 모임 ID
      * @param email 조회하는 사용자의 이메일 (null 가능)
@@ -239,6 +279,50 @@ public class MeetingServiceImpl implements MeetingService {
     @Transactional(readOnly = true)
     public List<MeetingDTO> getByGroupId(Long groupId, String email) {
         return meetingRepository.findByGroupId(groupId).stream()
+                .map(m -> entityToDTO(m, email))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 모임의 예정된 정모 목록 조회 (날짜 기반)
+     *
+     * [조건]
+     * - 현재 시간 이후의 정모만 (meetingDate > now)
+     * - 취소된 정모(CANCELLED) 제외
+     * - 정모 날짜 오름차순 정렬
+     *
+     * [설계 의도]
+     * status 필드 대신 날짜 기반으로 예정/지난 정모를 구분합니다.
+     * 스케줄러 방식보다 단순하고 실시간으로 정확한 결과를 제공합니다.
+     *
+     * @param groupId 모임 ID
+     * @param email 조회하는 사용자의 이메일 (null 가능)
+     * @return 예정된 정모 목록
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<MeetingDTO> getUpcomingByGroupId(Long groupId, String email) {
+        return meetingRepository.findUpcomingByGroupId(groupId, LocalDateTime.now()).stream()
+                .map(m -> entityToDTO(m, email))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 모임의 지난 정모 목록 조회 (날짜 기반)
+     *
+     * [조건]
+     * - 현재 시간 이전의 정모만 (meetingDate <= now)
+     * - 취소된 정모(CANCELLED) 제외
+     * - 정모 날짜 내림차순 정렬 (최근 지난 정모가 먼저)
+     *
+     * @param groupId 모임 ID
+     * @param email 조회하는 사용자의 이메일 (null 가능)
+     * @return 지난 정모 목록
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<MeetingDTO> getPastByGroupId(Long groupId, String email) {
+        return meetingRepository.findPastByGroupId(groupId, LocalDateTime.now()).stream()
                 .map(m -> entityToDTO(m, email))
                 .collect(Collectors.toList());
     }
@@ -484,17 +568,46 @@ public class MeetingServiceImpl implements MeetingService {
                     .build());
         }
 
-        // 현재 사용자의 참석 상태 설정
-        // 로그인한 사용자인 경우에만 myStatus를 조회
+        // 현재 사용자의 참석 상태 및 수정 권한 설정
+        // 로그인한 사용자인 경우에만 myStatus와 canEdit을 조회
         if (email != null) {
             Member member = memberRepository.findByEmail(email).orElse(null);
             if (member != null) {
+                // myStatus 설정
                 attendeeRepository.findByMeetingIdAndMemberId(meeting.getId(), member.getId())
                         .ifPresent(a -> builder.myStatus(a.getStatus().name()));
+
+                // canEdit 계산: 정모 생성자 또는 모임 OWNER/MANAGER
+                boolean canEdit = calculateCanEdit(meeting, member);
+                builder.canEdit(canEdit);
             }
         }
 
         return builder.build();
+    }
+
+    /**
+     * 정모 수정 권한 계산
+     *
+     * [권한이 있는 경우]
+     * 1. 정모 생성자
+     * 2. 모임장 (OWNER)
+     * 3. 운영진 (MANAGER)
+     *
+     * @param meeting 정모 엔티티
+     * @param member 현재 사용자
+     * @return 수정 권한이 있으면 true, 없으면 false
+     */
+    private boolean calculateCanEdit(Meeting meeting, Member member) {
+        // 1. 정모 생성자인지 확인
+        if (meeting.getCreator().getId().equals(member.getId())) {
+            return true;
+        }
+
+        // 2. 모임 관리자인지 확인 (OWNER 또는 MANAGER)
+        return groupMemberRepository.findByGroupIdAndMemberId(meeting.getGroup().getId(), member.getId())
+                .map(gm -> gm.getRole() == GroupRole.OWNER || gm.getRole() == GroupRole.MANAGER)
+                .orElse(false);
     }
 
     /**
@@ -510,5 +623,103 @@ public class MeetingServiceImpl implements MeetingService {
                 .status(attendee.getStatus().name())
                 .registeredAt(attendee.getCreatedAt())
                 .build();
+    }
+
+    // ========================================================================
+    // 알림 발송 Helper 메서드
+    // ========================================================================
+
+    /**
+     * 새 정모 생성 알림 발송
+     *
+     * 모임의 모든 승인된 멤버에게 새 정모 알림을 발송합니다.
+     * 정모 생성자는 알림 대상에서 제외됩니다.
+     *
+     * @param group 모임 엔티티
+     * @param meeting 생성된 정모 엔티티
+     * @param creator 정모 생성자 (알림 대상 제외)
+     */
+    private void sendNewMeetingNotification(Group group, Meeting meeting, Member creator) {
+        // 모임의 승인된 멤버 목록 조회
+        List<GroupMember> members = groupMemberRepository.findByGroupIdAndStatus(
+                group.getId(), JoinStatus.APPROVED);
+
+        String title = "새 정모";
+        String message = String.format("'%s'에 새 정모 '%s'이(가) 등록되었습니다.",
+                group.getName(), meeting.getTitle());
+
+        // 생성자를 제외한 모든 멤버에게 알림 발송
+        for (GroupMember gm : members) {
+            if (!gm.getMember().getId().equals(creator.getId())) {
+                notificationService.send(
+                        gm.getMember(),
+                        NotificationType.NEW_MEETING,
+                        title,
+                        message,
+                        meeting.getId()
+                );
+            }
+        }
+
+        log.info("New meeting notification sent to {} members for meeting {}",
+                members.size() - 1, meeting.getId());
+    }
+
+    /**
+     * 정모 정보 변경 알림 발송
+     *
+     * 정모의 장소/시간이 변경된 경우, 참석 예정자(ATTENDING)에게 알림을 발송합니다.
+     *
+     * @param meeting 수정된 정모 엔티티
+     */
+    private void sendMeetingUpdatedNotification(Meeting meeting) {
+        // 참석 예정자(ATTENDING) 목록 조회
+        List<MeetingAttendee> attendees = attendeeRepository.findByMeetingIdAndStatus(
+                meeting.getId(), AttendStatus.ATTENDING);
+
+        String title = "정모 변경";
+        String message = String.format("'%s' 일정이 변경되었습니다. 확인해주세요.", meeting.getTitle());
+
+        for (MeetingAttendee attendee : attendees) {
+            notificationService.send(
+                    attendee.getMember(),
+                    NotificationType.MEETING_UPDATED,
+                    title,
+                    message,
+                    meeting.getId()
+            );
+        }
+
+        log.info("Meeting updated notification sent to {} attendees for meeting {}",
+                attendees.size(), meeting.getId());
+    }
+
+    /**
+     * 정모 취소 알림 발송
+     *
+     * 정모가 취소된 경우, 참석 예정자(ATTENDING)에게 알림을 발송합니다.
+     *
+     * @param meeting 취소된 정모 엔티티
+     */
+    private void sendMeetingCancelledNotification(Meeting meeting) {
+        // 참석 예정자(ATTENDING) 목록 조회
+        List<MeetingAttendee> attendees = attendeeRepository.findByMeetingIdAndStatus(
+                meeting.getId(), AttendStatus.ATTENDING);
+
+        String title = "정모 취소";
+        String message = String.format("'%s'이(가) 취소되었습니다.", meeting.getTitle());
+
+        for (MeetingAttendee attendee : attendees) {
+            notificationService.send(
+                    attendee.getMember(),
+                    NotificationType.MEETING_CANCELLED,
+                    title,
+                    message,
+                    meeting.getId()
+            );
+        }
+
+        log.info("Meeting cancelled notification sent to {} attendees for meeting {}",
+                attendees.size(), meeting.getId());
     }
 }

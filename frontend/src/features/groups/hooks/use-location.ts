@@ -80,7 +80,6 @@ export function useCurrentLocation() {
         (error) => {
           // 저정밀도로 실패했고 아직 고정밀도 시도 안했으면 재시도
           if (!highAccuracy && error.code === error.TIMEOUT) {
-            console.log("저정밀도 위치 실패, 고정밀도로 재시도...");
             tryGetPosition(true);
             return;
           }

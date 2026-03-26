@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { ChevronRight } from "lucide-react";
 import {
   useRecommendedGroups,
+  useGroupsList,
   GroupCard,
   DEFAULT_CATEGORIES,
   NearbyGroupsSection,
@@ -19,8 +20,36 @@ type TabType = "recommend" | "new" | "popular";
 function MainPage() {
   const { isLoggedIn } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("recommend");
-  const { data: recommendedGroups, isLoading: groupsLoading } =
+
+  // 탭별 데이터 조회
+  const { data: recommendedGroups, isLoading: recommendLoading } =
     useRecommendedGroups();
+  const { data: newGroupsPage, isLoading: newLoading } = useGroupsList({
+    sort: "latest",
+    size: 10,
+    page: 1,
+  });
+  const { data: popularGroupsPage, isLoading: popularLoading } = useGroupsList({
+    sort: "popular",
+    size: 10,
+    page: 1,
+  });
+
+  // 현재 탭에 맞는 데이터 선택
+  const groupsLoading =
+    activeTab === "recommend"
+      ? recommendLoading
+      : activeTab === "new"
+        ? newLoading
+        : popularLoading;
+
+  const displayGroups =
+    activeTab === "recommend"
+      ? recommendedGroups ?? []
+      : activeTab === "new"
+        ? (newGroupsPage?.dtoList ?? [])
+        : (popularGroupsPage?.dtoList ?? []);
+
   const { data: upcomingMeetings, isLoading: meetingsLoading } =
     useUpcomingMeetings();
   const { data: eventBanners } = useEventBanners();
@@ -33,17 +62,16 @@ function MainPage() {
 
   return (
     <div className="pb-8">
-      {/* 이벤트 배너 슬라이더 - 전체 너비 */}
+      {/* 이벤트 배너 슬라이더 - 전체 너비 breakout */}
       {eventBanners && eventBanners.length > 0 && (
-        <div className="w-full mb-1.5">
+        <div className="full-bleed mb-1.5">
           <BannerSlider banners={eventBanners} autoPlayInterval={4000} />
         </div>
       )}
 
-      {/* 카테고리 섹션 */}
-      <section className="section-spacing">
+      {/* 카테고리 섹션 - 흰 배경 전체 너비 */}
+      <section className="section-spacing bg-white full-bleed">
         <div className="app-content">
-          {/* 섹션 헤더 */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">카테고리</h2>
             <Link
@@ -54,8 +82,6 @@ function MainPage() {
               <ChevronRight size={16} />
             </Link>
           </div>
-
-          {/* 카테고리 그리드 - 반응형 */}
           <div className="grid-categories">
             {DEFAULT_CATEGORIES.slice(0, 10).map((category) => {
               const IconComponent =
@@ -79,17 +105,18 @@ function MainPage() {
         </div>
       </section>
 
-      {/* Nearby Groups - 로그인 시에만 표시 */}
+      {/* Nearby Groups - 회색 배경 전체 너비 */}
       {isLoggedIn && (
-        <section className="section-spacing bg-gray-50">
-          <NearbyGroupsSection />
+        <section className="section-spacing bg-gray-50 full-bleed">
+          <div className="app-content">
+            <NearbyGroupsSection />
+          </div>
         </section>
       )}
 
-      {/* 모임 탭 섹션 */}
-      <section className="section-spacing">
+      {/* 모임 탭 섹션 - 흰 배경 전체 너비 */}
+      <section className="section-spacing bg-white full-bleed">
         <div className="app-content">
-          {/* 섹션 헤더 + 탭 */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-6">
               {tabs.map((tab) => (
@@ -118,14 +145,13 @@ function MainPage() {
             </Link>
           </div>
 
-          {/* 모임 그리드 */}
           {groupsLoading ? (
             <div className="flex items-center justify-center h-60">
               <Spinner size="lg" />
             </div>
-          ) : recommendedGroups && recommendedGroups.length > 0 ? (
+          ) : displayGroups.length > 0 ? (
             <div className="grid-groups">
-              {recommendedGroups.slice(0, 10).map((group) => (
+              {displayGroups.map((group) => (
                 <GroupCard key={group.id} group={group} />
               ))}
             </div>
@@ -147,9 +173,9 @@ function MainPage() {
         </div>
       </section>
 
-      {/* 다가오는 정모 - 로그인 시에만 */}
+      {/* 다가오는 정모 - 회색 배경 전체 너비 */}
       {isLoggedIn && (
-        <section className="section-spacing bg-gray-50">
+        <section className="section-spacing bg-gray-50 full-bleed">
           <div className="app-content">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">다가오는 정모</h2>
@@ -183,27 +209,27 @@ function MainPage() {
 
       {/* 비로그인 사용자용 CTA */}
       {!isLoggedIn && (
-        <section className="section-spacing">
+        <section className="section-spacing bg-white full-bleed">
           <div className="app-content">
-            <div className="p-8 sm:p-12 bg-gradient-to-br from-primary-50 to-primary-100 rounded-3xl text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-white rounded-full flex items-center justify-center shadow-md">
-                <span className="text-4xl">🎉</span>
-              </div>
-              <h3 className="font-bold text-gray-900 text-2xl">
-                다모여와 함께 시작하세요
-              </h3>
-              <p className="mt-3 text-gray-600 max-w-md mx-auto">
-                취향이 맞는 사람들과 함께하는 즐거운 모임,
-                <br />
-                지금 바로 시작해보세요!
-              </p>
-              <Link
-                to="/member/login"
-                className="inline-block mt-6 px-10 py-4 bg-primary-500 text-white rounded-full font-semibold text-lg hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25"
-              >
-                시작하기
-              </Link>
+          <div className="p-8 sm:p-12 bg-gradient-to-br from-primary-50 to-primary-100 rounded-3xl text-center">
+            <div className="w-20 h-20 mx-auto mb-6 bg-white rounded-full flex items-center justify-center shadow-md">
+              <span className="text-4xl">🎉</span>
             </div>
+            <h3 className="font-bold text-gray-900 text-2xl">
+              다모여와 함께 시작하세요
+            </h3>
+            <p className="mt-3 text-gray-600 max-w-md mx-auto">
+              취향이 맞는 사람들과 함께하는 즐거운 모임,
+              <br />
+              지금 바로 시작해보세요!
+            </p>
+            <Link
+              to="/member/login"
+              className="inline-block mt-6 px-10 py-4 bg-primary-500 text-white rounded-full font-semibold text-lg hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25"
+            >
+              시작하기
+            </Link>
+          </div>
           </div>
         </section>
       )}

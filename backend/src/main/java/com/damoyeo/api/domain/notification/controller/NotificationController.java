@@ -74,9 +74,9 @@ public class NotificationController {
      *   "dtoList": [
      *     {
      *       "id": 1,
-     *       "type": "JOIN_APPROVED",
-     *       "title": "가입이 승인되었습니다",
-     *       "message": "강남 러닝 크루에 가입되었습니다.",
+     *       "type": "NEW_MEMBER",
+     *       "title": "새 멤버 가입",
+     *       "message": "홍길동님이 강남 러닝 크루에 가입했습니다.",
      *       "relatedId": 5,
      *       "isRead": false,
      *       "createdAt": "2024-05-01T10:30:00"
@@ -174,7 +174,7 @@ public class NotificationController {
      *
      * [프론트엔드 UI]
      * ┌─────────────────────────────────────┐
-     * │  🔔 알림                 [모두 읽음] │ ← 이 버튼 클릭 시
+     * │  🔔 알림                 [모두 읽음] │← 이 버튼 클릭 시
      * └─────────────────────────────────────┘
      *
      * @param member JWT 사용자 정보
@@ -185,6 +185,16 @@ public class NotificationController {
     public ResponseEntity<Map<String, String>> markAllAsRead(
             @AuthenticationPrincipal MemberDTO member) {
         notificationService.markAllAsRead(member.getEmail());
+        return ResponseEntity.ok(Map.of("result", "SUCCESS"));
+    }
+
+    @PatchMapping("/{id}/delete")
+    @Operation(summary = "알림 삭제처리")
+    public ResponseEntity<Map<String, String>> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal MemberDTO member
+    ) {
+        notificationService.delete(id, member.getEmail());
         return ResponseEntity.ok(Map.of("result", "SUCCESS"));
     }
 }

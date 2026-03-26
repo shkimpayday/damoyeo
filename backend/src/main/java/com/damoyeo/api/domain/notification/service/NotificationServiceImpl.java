@@ -1,5 +1,10 @@
 package com.damoyeo.api.domain.notification.service;
 
+import com.damoyeo.api.domain.meeting.entity.AttendStatus;
+import com.damoyeo.api.domain.meeting.entity.Meeting;
+import com.damoyeo.api.domain.meeting.entity.MeetingAttendee;
+import com.damoyeo.api.domain.meeting.repository.MeetingAttendeeRepository;
+import com.damoyeo.api.domain.meeting.repository.MeetingRepository;
 import com.damoyeo.api.domain.member.entity.Member;
 import com.damoyeo.api.domain.member.repository.MemberRepository;
 import com.damoyeo.api.domain.notification.dto.NotificationDTO;
@@ -15,7 +20,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -63,6 +71,15 @@ public class NotificationServiceImpl implements NotificationService {
     /** 회원 레포지토리 (이메일로 회원 조회) */
     private final MemberRepository memberRepository;
 
+    /** 정모 레포지토리 (리마인더 대상 정모 조회) */
+    private final MeetingRepository meetingRepository;
+
+    /** 정모 참석자 레포지토리 (참석 예정 정모 조회) */
+    private final MeetingAttendeeRepository meetingAttendeeRepository;
+
+    /** 날짜 포맷터 (리마인더 메시지용) */
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
     // ========================================================================
     // 알림 발송
     // ========================================================================
@@ -74,12 +91,12 @@ public class NotificationServiceImpl implements NotificationService {
      * 다른 서비스(GroupService, MeetingService 등)에서 이벤트 발생 시 호출합니다.
      *
      * [사용 예시]
-     * // 가입 승인 시 (GroupServiceImpl)
+     * // 새 멤버 가입 시 (GroupServiceImpl)
      * notificationService.send(
-     *     member,
-     *     NotificationType.JOIN_APPROVED,
-     *     "가입이 승인되었습니다",
-     *     "강남 러닝 크루에 가입되었습니다.",
+     *     owner,
+     *     NotificationType.NEW_MEMBER,
+     *     "새 멤버 가입",
+     *     "홍길동님이 강남 러닝 크루에 가입했습니다.",
      *     groupId
      * );
      *
@@ -102,9 +119,6 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.save(notification);
         log.info("Notification sent to {}: {}", member.getEmail(), title);
-
-        // TODO: Phase 2에서 실시간 알림 추가 (WebSocket/SSE)
-        // TODO: Phase 3에서 푸시 알림 추가 (Firebase/APNs)
     }
 
     // ========================================================================
@@ -125,24 +139,27 @@ public class NotificationServiceImpl implements NotificationService {
      * @return 페이지네이션된 알림 목록
      */
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public PageResponseDTO<NotificationDTO> getNotifications(String email, PageRequestDTO pageRequestDTO) {
         // 1. 회원 조회
         Member member = getMemberByEmail(email);
 
-        // 2. 알림 목록 조회 (페이지네이션)
-        Page<Notification> result = notificationRepository.findByMemberIdOrderByCreatedAtDesc(
+        // 2. 정모 리마인더 동적 생성 (조회 시점에 필요한 리마인더 자동 생성)
+        generateMeetingReminders(member);
+
+        // 3. 알림 목록 조회 (페이지네이션)
+        Page<Notification> result = notificationRepository.findByMemberIdAndIsDeletedFalseOrderByCreatedAtDesc(
                 member.getId(),
                 pageRequestDTO.getPageable("createdAt")  // createdAt으로 정렬
         );
 
-        // 3. 엔티티 → DTO 변환
+        // 4. 엔티티 → DTO 변환
         List<NotificationDTO> dtoList = result.getContent().stream()
                 .map(this::entityToDTO)
                 .collect(Collectors.toList());
 
-        // 4. PageResponseDTO 빌드
-        return PageResponseDTO.<NotificationDTO>withAll()
+        // 5. PageResponseDTO 빌드
+        return PageResponseDTO.<NotificationDTO>builder()
                 .pageRequestDTO(pageRequestDTO)
                 .dtoList(dtoList)
                 .totalCount((int) result.getTotalElements())
@@ -218,6 +235,21 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.markAllAsRead(member.getId());
     }
 
+    @Override
+    public void delete(Long notificationId, String email) {
+        Member member = getMemberByEmail(email);
+
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> CustomException.notFound("알림을 찾을 수 없습니다."));
+
+        if(!notification.getMember().getId().equals(member.getId())) {
+            throw CustomException.forbidden("권한이 없습니다");
+        }
+
+        notification.delete();
+
+    }
+
     // ========================================================================
     // Helper 메서드 (private)
     // ========================================================================
@@ -256,14 +288,138 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * 알림 타입에 따른 참조 타입 결정
      *
+     * [참조 타입 분류]
+     * - GROUP: 모임 관련 알림 (새 멤버, 멤버 탈퇴, 역할 변경, 강퇴, 모임 해체)
+     * - MEETING: 정모 관련 알림 (새 정모, 리마인더, 취소)
+     * - SYSTEM: 시스템 알림 (회원가입 환영)
+     *
      * @param type 알림 타입
      * @return 참조 타입 ("GROUP", "MEETING", "SYSTEM")
      */
     private String getReferenceType(NotificationType type) {
         return switch (type) {
-            case NEW_MEETING, MEETING_REMINDER, MEETING_CANCELLED -> "MEETING";
+            case NEW_MEETING, MEETING_REMINDER, MEETING_CANCELLED, MEETING_UPDATED, MEETING_IMMINENT -> "MEETING";
             case WELCOME -> "SYSTEM";
-            default -> "GROUP";
+            case NEW_MEMBER, MEMBER_LEFT, ROLE_CHANGED, GROUP_UPDATE, MEMBER_KICKED, GROUP_DISBANDED -> "GROUP";
         };
+    }
+
+    // ========================================================================
+    // 정모 리마인더 동적 생성 (조회 시점 생성 방식)
+    // ========================================================================
+
+    /**
+     * 정모 리마인더 알림 동적 생성
+     *
+     * 알림 목록 조회 시점에 필요한 리마인더 알림을 자동으로 생성합니다.
+     * 이미 생성된 리마인더는 중복 생성되지 않습니다.
+     *
+     * [리마인더 종류]
+     * 1. D-1 리마인더: 내일 진행되는 정모 (오늘 00:00 ~ 내일 23:59:59)
+     * 2. 3시간 전 리마인더: 3시간 이내에 시작하는 정모
+     *
+     * [동작 방식]
+     * 1. 회원의 참석 예정(ATTENDING) 정모 목록 조회
+     * 2. 각 정모에 대해 리마인더 조건 확인
+     * 3. 해당 리마인더가 없으면 DB에 생성
+     *
+     * @param member 회원 엔티티
+     */
+    private void generateMeetingReminders(Member member) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 내가 참석 예정인 미래 정모 목록 조회
+        List<Meeting> myUpcomingMeetings = meetingRepository.findMyUpcomingMeetings(member.getId(), now);
+
+        for (Meeting meeting : myUpcomingMeetings) {
+            LocalDateTime meetingDate = meeting.getMeetingDate();
+
+            // 1. D-1 리마인더: 정모가 내일인 경우 (24시간 이내)
+            if (isWithinHours(meetingDate, now, 24) && !isWithinHours(meetingDate, now, 3)) {
+                createReminderIfNotExists(member, meeting, NotificationType.MEETING_REMINDER);
+            }
+
+            // 2. 3시간 전 리마인더: 정모가 3시간 이내인 경우
+            if (isWithinHours(meetingDate, now, 3)) {
+                createReminderIfNotExists(member, meeting, NotificationType.MEETING_IMMINENT);
+            }
+        }
+    }
+
+    /**
+     * 정모 시작까지 남은 시간이 특정 시간 이내인지 확인
+     *
+     * @param meetingDate 정모 시작 시간
+     * @param now 현재 시간
+     * @param hours 확인할 시간 (시간 단위)
+     * @return true: hours 이내, false: hours 초과
+     */
+    private boolean isWithinHours(LocalDateTime meetingDate, LocalDateTime now, int hours) {
+        LocalDateTime threshold = now.plusHours(hours);
+        return meetingDate.isBefore(threshold) && meetingDate.isAfter(now);
+    }
+
+    /**
+     * 리마인더 알림이 없으면 생성
+     *
+     * 중복 생성을 방지하기 위해 먼저 존재 여부를 확인합니다.
+     *
+     * @param member 회원 엔티티
+     * @param meeting 정모 엔티티
+     * @param type 알림 타입 (MEETING_REMINDER 또는 MEETING_IMMINENT)
+     */
+    private void createReminderIfNotExists(Member member, Meeting meeting, NotificationType type) {
+        // 이미 해당 리마인더가 있는지 확인
+        boolean exists = notificationRepository.existsByMemberIdAndTypeAndRelatedId(
+                member.getId(), type, meeting.getId());
+
+        if (!exists) {
+            String title;
+            String message;
+
+            if (type == NotificationType.MEETING_REMINDER) {
+                title = "정모 리마인더";
+                message = buildDayBeforeReminderMessage(meeting);
+            } else {
+                title = "정모 임박";
+                message = String.format("'%s'이(가) 곧 시작됩니다.", meeting.getTitle());
+            }
+
+            Notification notification = Notification.builder()
+                    .member(member)
+                    .type(type)
+                    .title(title)
+                    .message(message)
+                    .relatedId(meeting.getId())
+                    .build();
+
+            notificationRepository.save(notification);
+            log.info("Meeting reminder created: {} for meeting {} to member {}",
+                    type, meeting.getId(), member.getEmail());
+        }
+    }
+
+    /**
+     * D-1 리마인더 메시지 생성
+     *
+     * @param meeting 정모 엔티티
+     * @return 리마인더 메시지
+     */
+    private String buildDayBeforeReminderMessage(Meeting meeting) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("내일 '").append(meeting.getTitle()).append("'이(가) 있습니다.");
+
+        // 시간 정보 추가
+        if (meeting.getMeetingDate() != null) {
+            String time = meeting.getMeetingDate().format(TIME_FORMATTER);
+            sb.append(" (").append(time).append(")");
+        }
+
+        // 장소 정보 추가
+        if (meeting.getLocation() != null && !meeting.getLocation().isEmpty()) {
+            sb.append(" 장소: ").append(meeting.getLocation());
+        }
+
+        return sb.toString();
     }
 }

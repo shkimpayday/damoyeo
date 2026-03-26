@@ -107,7 +107,7 @@ public interface MeetingService {
     // ========================================================================
 
     /**
-     * 특정 모임의 정모 목록 조회
+     * 특정 모임의 정모 목록 조회 (전체)
      *
      * [조건]
      * - 해당 모임에 속한 정모만
@@ -121,6 +121,38 @@ public interface MeetingService {
      * Controller: GET /api/meetings/group/{groupId}
      */
     List<MeetingDTO> getByGroupId(Long groupId, String email);
+
+    /**
+     * 특정 모임의 예정된 정모 목록 조회
+     *
+     * [조건]
+     * - 해당 모임에 속한 정모만
+     * - SCHEDULED, ONGOING 상태만
+     * - 정모 날짜 오름차순 정렬
+     *
+     * @param groupId 모임 ID
+     * @param email 조회하는 사용자의 이메일 (null 가능)
+     * @return 예정된 정모 목록
+     *
+     * Controller: GET /api/meetings/group/{groupId}/upcoming
+     */
+    List<MeetingDTO> getUpcomingByGroupId(Long groupId, String email);
+
+    /**
+     * 특정 모임의 지난 정모 목록 조회
+     *
+     * [조건]
+     * - 해당 모임에 속한 정모만
+     * - COMPLETED 상태만
+     * - 정모 날짜 내림차순 정렬 (최근 완료된 정모가 먼저)
+     *
+     * @param groupId 모임 ID
+     * @param email 조회하는 사용자의 이메일 (null 가능)
+     * @return 지난 정모 목록
+     *
+     * Controller: GET /api/meetings/group/{groupId}/past
+     */
+    List<MeetingDTO> getPastByGroupId(Long groupId, String email);
 
     /**
      * 다가오는 정모 목록 조회 (전체)

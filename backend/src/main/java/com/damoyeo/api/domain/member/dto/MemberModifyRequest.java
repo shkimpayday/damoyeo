@@ -58,4 +58,11 @@ public class MemberModifyRequest {
      */
     @Size(min = 4, message = "비밀번호는 4자 이상이어야 합니다.")
     private String password;
+
+    /**
+     * 활동 모임 공개 여부 (선택, 프리미엄 회원 전용)
+     *
+     * null이면 기존 값 유지
+     */
+    private Boolean showJoinedGroups;
 }

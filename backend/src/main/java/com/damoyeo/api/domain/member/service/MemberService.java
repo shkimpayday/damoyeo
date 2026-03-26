@@ -3,6 +3,7 @@ package com.damoyeo.api.domain.member.service;
 import com.damoyeo.api.domain.member.dto.MemberDTO;
 import com.damoyeo.api.domain.member.dto.MemberModifyRequest;
 import com.damoyeo.api.domain.member.dto.MemberSignupRequest;
+import com.damoyeo.api.domain.member.dto.PublicProfileDTO;
 
 /**
  * ============================================================================
@@ -97,4 +98,15 @@ public interface MemberService {
      * @param address 주소
      */
     void updateLocation(String email, Double lat, Double lng, String address);
+
+    /**
+     * 공개 프로필 조회
+     *
+     * 다른 회원이 볼 수 있는 공개 프로필 정보를 조회합니다.
+     * 이메일, 비밀번호 등 민감한 정보는 포함되지 않습니다.
+     *
+     * @param memberId 조회할 회원 ID
+     * @return 공개 프로필 정보
+     */
+    PublicProfileDTO getPublicProfile(Long memberId);
 }

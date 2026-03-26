@@ -81,4 +81,17 @@ public class PageRequestDTO {
     public Pageable getPageable(String... props) {
         return PageRequest.of(this.page - 1, this.size, Sort.by(props).descending());
     }
+
+    /**
+     * 정렬 없는 Pageable 반환
+     *
+     * Native Query처럼 SQL 내부에서 ORDER BY를 직접 처리하는 경우에 사용합니다.
+     * Spring이 Pageable의 Sort를 SQL에 추가하려 하면 native query와 충돌하기 때문에
+     * 이 메서드로 정렬 없는 Pageable을 전달해야 합니다.
+     *
+     * @return 정렬 없는 Pageable 객체
+     */
+    public Pageable getUnsortedPageable() {
+        return PageRequest.of(this.page - 1, this.size);
+    }
 }

@@ -52,6 +52,10 @@ public class MemberDTO {
     @Builder.Default
     private List<String> roleNames = new ArrayList<>();
 
+    /** 활동 중인 모임 공개 여부 (프리미엄 회원 전용 설정) */
+    @Builder.Default
+    private boolean showJoinedGroups = true;
+
     /**
      * JWT 토큰에 담을 클레임(Claims) 생성
      *

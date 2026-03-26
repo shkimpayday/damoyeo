@@ -5,15 +5,15 @@ import {
   getNotifications,
   markAsRead as markAsReadApi,
   markAllAsRead as markAllAsReadApi,
+  type NotificationDTO,
+  removeNotificationApi,
 } from "@/features/notifications";
 import { EmptyState, Spinner } from "@/components/ui";
 import { getRelativeTime } from "@/utils/date";
 
 function NotificationPage() {
   const navigate = useNavigate();
-  const { notifications, setNotifications, markAsRead, markAllAsRead } = useNotificationStore();
-
-  console.log("notifications>>>>", notifications)
+  const { notifications, setNotifications, markAsRead, markAllAsRead, removeNotification } = useNotificationStore();
 
   useEffect(() => {
     loadNotifications();
@@ -28,12 +28,7 @@ function NotificationPage() {
     }
   };
 
-  const handleNotificationClick = async (notification: {
-    id: number;
-    referenceType: string;
-    referenceId: number;
-    isRead: boolean;
-  }) => {
+  const handleNotificationClick = async (notification: NotificationDTO) => {
     // 읽지 않은 알림이면 읽음 처리
     if (!notification.isRead) {
       try {
@@ -56,6 +51,15 @@ function NotificationPage() {
         break;
     }
   };
+
+  const deleteNotification = async(notifications: NotificationDTO) => {
+    try {
+      await removeNotificationApi(notifications.id);
+      removeNotification(notifications.id);
+    }catch (error) {
+      console.error("deleteNotification error")
+    }
+  }
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -97,32 +101,40 @@ function NotificationPage() {
       ) : (
         <div className="space-y-2">
           {notifications.map((notification) => (
-            <button
+            <div
               key={notification.id}
-              onClick={() => handleNotificationClick(notification)}
-              className={`w-full text-left p-4 rounded-xl transition-colors ${
+              className={`group relative p-4 rounded-xl transition-colors cursor-pointer ${
                 notification.isRead
-                  ? "bg-white"
+                  ? "bg-white hover:bg-gray-50"
                   : "bg-primary-50 border-l-4 border-primary-500"
               }`}
+              onClick={() => handleNotificationClick(notification)}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">
-                    {notification.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {notification.content}
+                  <h3 className="font-medium text-gray-900">{notification.title}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{notification.content}</p>
+                  <p className="mt-2 text-xs text-gray-400">
+                    {getRelativeTime(notification.createdAt)}
                   </p>
                 </div>
-                {!notification.isRead && (
-                  <span className="w-2 h-2 bg-primary-500 rounded-full ml-2 mt-2" />
-                )}
+
+                {/* 호버 시에만 보이는 X 버튼 */}
+                <div className="mt-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // 부모 클릭 이벤트 방지
+                      deleteNotification(notification)
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity
+                              text-gray-400 hover:text-gray-600 p-1 ml-2"
+                    aria-label="알림 삭제"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
-              <p className="mt-2 text-xs text-gray-400">
-                {getRelativeTime(notification.createdAt)}
-              </p>
-            </button>
+            </div>
           ))}
         </div>
       )}

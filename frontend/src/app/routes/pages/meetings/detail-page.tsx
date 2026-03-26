@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router";
+import { ChevronLeft, Calendar, MapPin, Users, Wallet, MessageCircle } from "lucide-react";
 import {
   useMeetingDetail,
   useMeetingAttendees,
   useAttendMeeting,
   useCancelAttend,
 } from "@/features/meetings";
-import { useAuth } from "@/features/auth";
+import { useAuth, MemberProfileModal } from "@/features/auth";
 import { Avatar, EmptyState, Spinner, ResultModal } from "@/components/ui";
 import { formatDateTime, getDayOfWeek } from "@/utils/date";
 
@@ -16,6 +17,7 @@ function MeetingDetailPage() {
   const { isLoggedIn } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", content: "" });
+  const [profileMemberId, setProfileMemberId] = useState<number | null>(null);
 
   const { data: meeting, isLoading } = useMeetingDetail(Number(meetingId));
   const { data: attendees } = useMeetingAttendees(Number(meetingId));
@@ -72,6 +74,16 @@ function MeetingDetailPage() {
     }
   };
 
+  // 날짜 기반으로 지난 정모인지 판단
+  const isPastMeeting = new Date(meeting.meetingDate) <= new Date();
+
+  // 실제 표시할 상태 (날짜 기반)
+  const displayStatus = meeting.status === "CANCELLED"
+    ? "CANCELLED"
+    : isPastMeeting
+      ? "COMPLETED"
+      : meeting.status;
+
   const statusColors = {
     SCHEDULED: "bg-blue-100 text-blue-700",
     ONGOING: "bg-green-100 text-green-700",
@@ -87,113 +99,183 @@ function MeetingDetailPage() {
   };
 
   return (
-    <div className="pb-20">
+    <div className="pb-24 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="p-4 bg-white">
-        <Link
-          to={`/groups/${meeting.groupId}`}
-          className="text-sm text-primary-600 mb-2 block"
-        >
-          ← {meeting.groupName}
-        </Link>
-        <div className="flex items-start justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">{meeting.title}</h1>
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              statusColors[meeting.status]
-            }`}
+      <div className="bg-white border-b border-gray-100">
+        <div className="px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
           >
-            {statusLabels[meeting.status]}
-          </span>
+            <ChevronLeft size={24} className="text-gray-600" />
+          </button>
+          <Link
+            to={`/groups/${meeting.groupId}`}
+            className="text-sm text-gray-500 hover:text-primary-600 transition-colors"
+          >
+            {meeting.groupName}
+          </Link>
+        </div>
+
+        <div className="px-5 pb-5">
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+              {meeting.title}
+            </h1>
+            <span
+              className={`shrink-0 px-3 py-1 rounded-full text-sm font-semibold ${
+                statusColors[displayStatus]
+              }`}
+            >
+              {statusLabels[displayStatus]}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Info */}
-      <div className="p-4 bg-white mt-2 space-y-4">
-        <div className="flex items-start gap-3">
-          <span className="text-xl">📅</span>
-          <div>
-            <p className="font-medium">
-              {formatDateTime(meeting.meetingDate)} (
-              {getDayOfWeek(meeting.meetingDate)})
-            </p>
-            {meeting.endDate && (
-              <p className="text-sm text-gray-500">
-                ~ {formatDateTime(meeting.endDate)}
+      {/* Info Cards */}
+      <div className="p-4 space-y-3">
+        {/* 일시 카드 */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center">
+              <Calendar size={22} className="text-primary-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-400 font-medium mb-0.5">일시</p>
+              <p className="font-semibold text-gray-900">
+                {formatDateTime(meeting.meetingDate)} ({getDayOfWeek(meeting.meetingDate)})
               </p>
+              {meeting.endDate && (
+                <p className="text-sm text-gray-500 mt-0.5">
+                  ~ {formatDateTime(meeting.endDate)}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 장소 카드 */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center">
+              <MapPin size={22} className="text-orange-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-400 font-medium mb-0.5">장소</p>
+              <p className="font-semibold text-gray-900">
+                {meeting.address || "위치 미정"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 참석 현황 + 참가비 카드 */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
+              <Users size={22} className="text-green-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-gray-400 font-medium mb-0.5">참석 현황</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl font-bold text-primary-600">
+                  {meeting.currentAttendees}
+                </span>
+                <span className="text-gray-400">/ {meeting.maxAttendees}명</span>
+              </div>
+            </div>
+            {meeting.fee > 0 && (
+              <div className="border-l border-gray-100 pl-4">
+                <p className="text-xs text-gray-400 font-medium mb-0.5">참가비</p>
+                <div className="flex items-center gap-1">
+                  <Wallet size={16} className="text-amber-500" />
+                  <span className="font-bold text-gray-900">
+                    {meeting.fee.toLocaleString()}원
+                  </span>
+                </div>
+              </div>
             )}
           </div>
         </div>
-
-        <div className="flex items-start gap-3">
-          <span className="text-xl">📍</span>
-          <p className="font-medium">{meeting.address || "위치 미정"}</p>
-        </div>
-
-        <div className="flex items-start gap-3">
-          <span className="text-xl">👥</span>
-          <p className="font-medium">
-            {meeting.currentAttendees}/{meeting.maxAttendees}명 참석
-          </p>
-        </div>
-
-        {meeting.fee > 0 && (
-          <div className="flex items-start gap-3">
-            <span className="text-xl">💰</span>
-            <p className="font-medium">
-              {meeting.fee.toLocaleString()}원
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Description */}
-      <div className="p-4 bg-white mt-2">
-        <h3 className="font-bold text-gray-900 mb-2">상세 내용</h3>
-        <p className="text-gray-600 whitespace-pre-wrap">
-          {meeting.description || "설명이 없습니다."}
-        </p>
+      <div className="px-4 pb-3">
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <h3 className="text-base font-bold text-gray-900 mb-3">상세 내용</h3>
+          <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">
+            {meeting.description || "등록된 설명이 없습니다."}
+          </p>
+        </div>
       </div>
 
       {/* Attendees */}
-      <div className="p-4 bg-white mt-2">
-        <h3 className="font-bold text-gray-900 mb-3">
-          참석자 ({attendees?.length || 0})
-        </h3>
-        {attendees && attendees.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {attendees.map((attendee) => (
-              <div key={attendee.id} className="flex items-center gap-2">
-                <Avatar
-                  src={attendee.member.profileImage}
-                  alt={attendee.member.nickname}
-                  size="sm"
-                />
-                <span className="text-sm">{attendee.member.nickname}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">아직 참석자가 없습니다.</p>
-        )}
+      <div className="px-4 pb-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <h3 className="text-base font-bold text-gray-900 mb-4">
+            참석자
+            <span className="ml-2 text-primary-500">{attendees?.length || 0}</span>
+          </h3>
+          {attendees && attendees.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {attendees.map((attendee) => (
+                <button
+                  key={attendee.id}
+                  type="button"
+                  onClick={() => setProfileMemberId(attendee.member.id)}
+                  className="flex items-center gap-3 p-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                >
+                  <Avatar
+                    src={attendee.member.profileImage}
+                    alt={attendee.member.nickname}
+                    size="md"
+                  />
+                  <span className="text-sm font-medium text-gray-800 truncate">
+                    {attendee.member.nickname}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <div className="text-3xl mb-2">👋</div>
+              <p className="text-gray-500">아직 참석자가 없습니다</p>
+              <p className="text-gray-400 text-sm mt-1">첫 번째 참석자가 되어보세요!</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Bottom Action Button */}
-      {meeting.status === "SCHEDULED" && (
-        <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-200">
-          <div className="flex gap-3">
-            {/* Edit Button - 항상 표시 (권한은 edit 페이지에서 체크) */}
-            <Link
-              to={`/meetings/${meeting.id}/edit`}
-              className="px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              수정
-            </Link>
+      {/* Bottom Action Button - 지난 정모나 취소된 정모는 버튼 숨김 */}
+      {!isPastMeeting && meeting.status !== "CANCELLED" && (
+        <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg">
+          <div className="flex gap-3 max-w-lg mx-auto">
+            {/* 수정 버튼은 권한이 있는 경우에만 표시 (생성자 또는 OWNER/MANAGER) */}
+            {meeting.canEdit && (
+              <Link
+                to={`/meetings/${meeting.id}/edit`}
+                className="px-5 py-3.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                수정
+              </Link>
+            )}
+
+            {/* 참석자 전용 채팅 버튼 */}
+            {meeting.myStatus === "ATTENDING" && (
+              <Link
+                to={`/meetings/${meeting.id}/chat`}
+                className="px-4 py-3.5 bg-primary-50 rounded-xl flex items-center justify-center hover:bg-primary-100 transition-colors"
+                title="참석자 채팅"
+              >
+                <MessageCircle size={22} className="text-primary-500" />
+              </Link>
+            )}
 
             {meeting.myStatus === "ATTENDING" ? (
               <button
                 onClick={handleCancelAttend}
-                className="flex-1 py-3 border border-red-300 text-red-600 rounded-lg font-medium"
+                className="flex-1 py-3.5 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:bg-red-50 transition-colors"
               >
                 참석 취소
               </button>
@@ -201,7 +283,7 @@ function MeetingDetailPage() {
               <button
                 onClick={handleAttend}
                 disabled={meeting.currentAttendees >= meeting.maxAttendees}
-                className="flex-1 py-3 bg-primary-500 text-white rounded-lg font-medium disabled:bg-gray-300"
+                className="flex-1 py-3.5 bg-primary-500 text-white rounded-xl font-semibold disabled:bg-gray-300 hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25"
               >
                 {meeting.currentAttendees >= meeting.maxAttendees
                   ? "정원 마감"
@@ -217,6 +299,14 @@ function MeetingDetailPage() {
           title={modalContent.title}
           content={modalContent.content}
           callbackFn={() => setShowModal(false)}
+        />
+      )}
+
+      {/* 회원 프로필 모달 */}
+      {profileMemberId && (
+        <MemberProfileModal
+          memberId={profileMemberId}
+          onClose={() => setProfileMemberId(null)}
         />
       )}
     </div>

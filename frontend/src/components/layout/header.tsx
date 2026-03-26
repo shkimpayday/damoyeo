@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router";
 import { useState, useRef, useEffect } from "react";
-import { Search, ChevronDown, User, Users, LogOut, PlusCircle } from "lucide-react";
+import { Search, ChevronDown, User, Users, LogOut, PlusCircle, Settings } from "lucide-react";
 import { useAuth } from "@/features/auth";
 import { Logo } from "@/components/ui";
 import { NotificationBell } from "./notification-bell";
@@ -165,6 +165,16 @@ export function Header() {
                           <PlusCircle size={18} className="text-gray-400" />
                           모임 만들기
                         </Link>
+                        {/* 관리자 메뉴 (ADMIN 권한 시) */}
+                        {loginState.roleNames?.includes("ADMIN") && (
+                          <Link
+                            to="/admin"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
+                          >
+                            <Settings size={18} className="text-indigo-500" />
+                            관리자 페이지
+                          </Link>
+                        )}
                       </div>
 
                       {/* 로그아웃 */}

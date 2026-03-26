@@ -216,4 +216,170 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
      * 호출 위치: GroupServiceImpl.getRecommendedGroups()
      */
     List<Group> findTop10ByStatusOrderByCreatedAtDesc(GroupStatus status);
+
+    /**
+     * 통합 검색 - 키워드 + 카테고리 필터링
+     *
+     * [용도]
+     * 검색 페이지에서 키워드와 카테고리를 동시에 필터링할 때 사용합니다.
+     *
+     * @param keyword 검색 키워드 (모임 이름)
+     * @param categoryId 카테고리 ID
+     * @param pageable 페이지 정보
+     * @return 검색 결과
+     */
+    @Query("select g from Group g " +
+            "left join fetch g.category " +
+            "where g.name like %:keyword% " +
+            "and g.category.id = :categoryId " +
+            "and g.status = 'ACTIVE'")
+    Page<Group> searchByKeywordAndCategory(
+            @Param("keyword") String keyword,
+            @Param("categoryId") Long categoryId,
+            Pageable pageable);
+
+    /**
+     * 인기순 정렬 (멤버 수 기준) - 전체 조회
+     *
+     * [용도]
+     * 인기순 정렬 시 멤버 수가 많은 모임을 상위에 표시합니다.
+     *
+     * [Native Query 사용 이유]
+     * 서브쿼리로 멤버 수를 계산하여 정렬해야 하기 때문
+     */
+    @Query(value = "select g.* from club g " +
+            "left join (select group_id, count(*) as member_count from group_member " +
+            "           where status = 'APPROVED' group by group_id) gm " +
+            "on g.id = gm.group_id " +
+            "where g.status = 'ACTIVE' " +
+            "order by coalesce(gm.member_count, 0) desc",
+            countQuery = "select count(*) from club g where g.status = 'ACTIVE'",
+            nativeQuery = true)
+    Page<Group> findAllOrderByMemberCount(Pageable pageable);
+
+    /**
+     * 인기순 정렬 (멤버 수 기준) - 카테고리 필터
+     */
+    @Query(value = "select g.* from club g " +
+            "left join (select group_id, count(*) as member_count from group_member " +
+            "           where status = 'APPROVED' group by group_id) gm " +
+            "on g.id = gm.group_id " +
+            "where g.status = 'ACTIVE' and g.category_id = :categoryId " +
+            "order by coalesce(gm.member_count, 0) desc",
+            countQuery = "select count(*) from club g where g.status = 'ACTIVE' and g.category_id = :categoryId",
+            nativeQuery = true)
+    Page<Group> findByCategoryIdOrderByMemberCount(@Param("categoryId") Long categoryId, Pageable pageable);
+
+    /**
+     * 인기순 정렬 (멤버 수 기준) - 키워드 검색
+     */
+    @Query(value = "select g.* from club g " +
+            "left join (select group_id, count(*) as member_count from group_member " +
+            "           where status = 'APPROVED' group by group_id) gm " +
+            "on g.id = gm.group_id " +
+            "where g.status = 'ACTIVE' and g.name like concat('%', :keyword, '%') " +
+            "order by coalesce(gm.member_count, 0) desc",
+            countQuery = "select count(*) from club g where g.status = 'ACTIVE' and g.name like concat('%', :keyword, '%')",
+            nativeQuery = true)
+    Page<Group> searchByKeywordOrderByMemberCount(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 인기순 정렬 (멤버 수 기준) - 키워드 + 카테고리
+     */
+    @Query(value = "select g.* from club g " +
+            "left join (select group_id, count(*) as member_count from group_member " +
+            "           where status = 'APPROVED' group by group_id) gm " +
+            "on g.id = gm.group_id " +
+            "where g.status = 'ACTIVE' " +
+            "and g.name like concat('%', :keyword, '%') " +
+            "and g.category_id = :categoryId " +
+            "order by coalesce(gm.member_count, 0) desc",
+            countQuery = "select count(*) from club g where g.status = 'ACTIVE' " +
+                    "and g.name like concat('%', :keyword, '%') and g.category_id = :categoryId",
+            nativeQuery = true)
+    Page<Group> searchByKeywordAndCategoryOrderByMemberCount(
+            @Param("keyword") String keyword,
+            @Param("categoryId") Long categoryId,
+            Pageable pageable);
+
+    // ========================================================================
+    // 관리자용 쿼리
+    // ========================================================================
+
+    /**
+     * 상태별 모임 수 집계
+     *
+     * [용도]
+     * 관리자 대시보드에서 활성 모임 수 조회
+     *
+     * @param status 조회할 상태
+     * @return 해당 상태의 모임 수
+     */
+    long countByStatus(GroupStatus status);
+
+    /**
+     * 키워드 + 상태로 모임 검색 (관리자용)
+     *
+     * [용도]
+     * 관리자 페이지에서 모임 검색 + 상태 필터링
+     *
+     * @param keyword 검색어 (모임 이름)
+     * @param status 상태 필터
+     * @param pageable 페이지 정보
+     * @return 검색 결과
+     */
+    @Query("select g from Group g " +
+            "left join fetch g.category " +
+            "left join fetch g.owner " +
+            "where g.name like %:keyword% and g.status = :status")
+    Page<Group> searchByKeywordAndStatus(@Param("keyword") String keyword,
+                                         @Param("status") GroupStatus status,
+                                         Pageable pageable);
+
+    /**
+     * 키워드로 모임 검색 (관리자용 - 모든 상태 포함)
+     *
+     * [용도]
+     * 관리자 페이지에서 모임 검색 (삭제된 모임 포함)
+     *
+     * @param keyword 검색어 (모임 이름)
+     * @param pageable 페이지 정보
+     * @return 검색 결과
+     */
+    @Query("select g from Group g " +
+            "left join fetch g.category " +
+            "left join fetch g.owner " +
+            "where g.name like %:keyword%")
+    Page<Group> searchByKeywordAdmin(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 전체 모임 조회 (관리자용 - 모든 상태 포함)
+     *
+     * [용도]
+     * 관리자 페이지에서 모임 목록 조회 (삭제된 모임 포함)
+     *
+     * @param pageable 페이지 정보
+     * @return 모임 목록
+     */
+    @Query("select g from Group g " +
+            "left join fetch g.category " +
+            "left join fetch g.owner")
+    Page<Group> findAllAdmin(Pageable pageable);
+
+    // ========================================================================
+    // 프리미엄 기능용 쿼리
+    // ========================================================================
+
+    /**
+     * 회원이 소유한 모임 수 집계
+     *
+     * [용도]
+     * 모임 생성 시 일반 회원의 모임 생성 제한 확인
+     * 일반 회원: 2개, 프리미엄 회원: 무제한
+     *
+     * @param memberId 회원 ID
+     * @return 소유한 모임 수 (활성/비활성 포함, 삭제 제외)
+     */
+    @Query("select count(g) from Group g where g.owner.id = :memberId and g.status <> 'DELETED'")
+    int countOwnedGroups(@Param("memberId") Long memberId);
 }

@@ -1,5 +1,6 @@
 package com.damoyeo.api.domain.event.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -69,7 +70,12 @@ public class EventDetailDTO {
     /** 이벤트 종료일시 */
     private LocalDateTime endDate;
 
-    /** 활성화 여부 */
+    /**
+     * 활성화 여부
+     *
+     * @JsonProperty: Jackson이 boolean 필드명 'isActive'를 'active'로 직렬화하는 것을 방지
+     */
+    @JsonProperty("isActive")
     private boolean isActive;
 
     /** 태그 목록 */

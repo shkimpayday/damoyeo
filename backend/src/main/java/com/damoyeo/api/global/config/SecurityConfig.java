@@ -5,6 +5,7 @@ import com.damoyeo.api.global.security.handler.APILoginFailHandler;
 import com.damoyeo.api.global.security.handler.APILoginSuccessHandler;
 import com.damoyeo.api.global.util.JWTUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -55,6 +56,14 @@ public class SecurityConfig {
      * 로그인 성공 시 토큰 생성, 요청마다 토큰 검증에 사용됩니다.
      */
     private final JWTUtil jwtUtil;
+
+    /**
+     * 허용할 CORS 출처 목록 (콤마 구분)
+     * 환경변수 CORS_ALLOWED_ORIGINS 또는 application.properties의 cors.allowed-origins 값을 사용합니다.
+     * 배포 시: CORS_ALLOWED_ORIGINS=https://damoyeo.com,https://www.damoyeo.com
+     */
+    @Value("${cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    private String allowedOriginsRaw;
 
     /**
      * 비밀번호 암호화 방식 설정
@@ -136,6 +145,8 @@ public class SecurityConfig {
                                 "/api/member/kakao").permitAll()
                         // 이메일 인증 API
                         .requestMatchers("/api/email/**").permitAll()
+                        // WebSocket 엔드포인트 (JWT는 JWTChannelInterceptor에서 검증)
+                        .requestMatchers("/ws/**").permitAll()
                         // Swagger API 문서
                         .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
                         // 카테고리 조회 (누구나 가능)
@@ -172,8 +183,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 허용할 출처 (프론트엔드 주소)
-        // 배포 시에는 실제 도메인을 추가해야 합니다.
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
+        // 배포 시: CORS_ALLOWED_ORIGINS 환경변수 또는 cors.allowed-origins 프로퍼티로 설정
+        List<String> allowedOrigins = Arrays.asList(allowedOriginsRaw.split(","));
+        configuration.setAllowedOrigins(allowedOrigins);
 
         // 허용할 HTTP 메서드
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

@@ -13,18 +13,17 @@ import lombok.*;
  *
  * [역할]
  * 사용자에게 전송되는 각종 알림을 저장합니다.
- * 모임 가입 승인, 정모 알림, 역할 변경 등 다양한 이벤트를 사용자에게 알려줍니다.
+ * 새 멤버 가입, 정모 알림, 역할 변경 등 다양한 이벤트를 사용자에게 알려줍니다.
  *
  * [알림 종류] (NotificationType)
- * - JOIN_REQUEST: 가입 신청이 왔을 때 (모임장에게)
- * - JOIN_APPROVED: 가입이 승인되었을 때 (신청자에게)
- * - JOIN_REJECTED: 가입이 거절되었을 때 (신청자에게)
  * - NEW_MEETING: 새 정모가 등록되었을 때 (모임 멤버에게)
  * - MEETING_REMINDER: 정모 시작 전 알림 (참석자에게)
  * - MEETING_CANCELLED: 정모가 취소되었을 때 (참석자에게)
  * - NEW_MEMBER: 새 멤버가 가입했을 때 (모임장에게)
+ * - MEMBER_LEFT: 멤버가 탈퇴했을 때 (모임장에게)
  * - GROUP_UPDATE: 모임 정보가 변경되었을 때 (멤버에게)
  * - ROLE_CHANGED: 역할이 변경되었을 때 (해당 멤버에게)
+ * - WELCOME: 회원가입 환영 알림
  *
  * [사용 위치]
  * - NotificationService.send(): 알림 생성
@@ -34,7 +33,7 @@ import lombok.*;
  * ┌─────────────────────────────────────┐
  * │  🔔 알림                     [모두 읽음]│
  * ├─────────────────────────────────────┤
- * │  ● 강남 러닝 크루 가입이 승인되었습니다  │
+ * │  ● 홍길동님이 강남 러닝 크루에 가입했습니다│
  * │    2시간 전                          │
  * │  ○ 5월 첫째 주 러닝 정모가 등록되었습니다│
  * │    어제                              │
@@ -80,9 +79,9 @@ public class Notification extends BaseEntity {
      *
      * [프론트엔드 활용]
      * 알림 유형에 따라 아이콘이나 스타일을 다르게 표시할 수 있습니다.
-     * - JOIN_APPROVED: 승인 아이콘 (초록색)
-     * - JOIN_REJECTED: 거절 아이콘 (빨간색)
+     * - NEW_MEMBER: 새 멤버 아이콘 (초록색)
      * - NEW_MEETING: 캘린더 아이콘
+     * - WELCOME: 환영 아이콘
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -92,7 +91,7 @@ public class Notification extends BaseEntity {
      * 알림 제목
      *
      * 알림의 제목 또는 요약
-     * 예: "가입이 승인되었습니다", "새 정모가 등록되었습니다"
+     * 예: "새 멤버 가입", "새 정모가 등록되었습니다"
      */
     @Column(nullable = false)
     private String title;
@@ -113,15 +112,15 @@ public class Notification extends BaseEntity {
      * 알림 유형에 따라 다른 엔티티를 가리킵니다.
      *
      * [유형별 relatedId]
-     * - JOIN_*: groupId (모임 ID)
      * - NEW_MEETING, MEETING_*: meetingId (정모 ID)
-     * - NEW_MEMBER: groupId (모임 ID)
+     * - NEW_MEMBER, MEMBER_LEFT: groupId (모임 ID)
      * - GROUP_UPDATE: groupId (모임 ID)
      * - ROLE_CHANGED: groupId (모임 ID)
+     * - WELCOME: null
      *
      * [프론트엔드 활용]
      * 알림 클릭 시 해당 리소스 페이지로 이동
-     * 예: JOIN_APPROVED 알림 클릭 → /groups/{relatedId}로 이동
+     * 예: NEW_MEMBER 알림 클릭 → /groups/{relatedId}로 이동
      */
     private Long relatedId;  // 관련 엔티티 ID (group, meeting 등)
 
@@ -139,6 +138,10 @@ public class Notification extends BaseEntity {
     @Builder.Default
     private boolean isRead = false;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
+
     // ========================================================================
     // 변경 메서드
     // ========================================================================
@@ -153,4 +156,9 @@ public class Notification extends BaseEntity {
     public void markAsRead() {
         this.isRead = true;
     }
+
+    public void delete() {
+        this.isDeleted = true;
+    }
+
 }

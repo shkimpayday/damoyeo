@@ -3,6 +3,7 @@ package com.damoyeo.api.domain.event.service;
 import com.damoyeo.api.domain.event.dto.EventBannerDTO;
 import com.damoyeo.api.domain.event.dto.EventCreateRequest;
 import com.damoyeo.api.domain.event.dto.EventDetailDTO;
+import com.damoyeo.api.domain.event.dto.EventUpdateRequest;
 
 import java.util.List;
 
@@ -78,6 +79,19 @@ public interface EventService {
      * Controller: POST /api/admin/events
      */
     Long createEvent(EventCreateRequest request);
+
+    /**
+     * 이벤트 수정 (관리자용)
+     *
+     * 기존 이벤트의 내용, 이미지, 기간 등을 수정합니다.
+     *
+     * @param eventId 이벤트 ID
+     * @param request 이벤트 수정 요청 DTO
+     * @return 수정된 이벤트 상세 정보
+     *
+     * Controller: PUT /api/events/{eventId}
+     */
+    EventDetailDTO updateEvent(Long eventId, EventUpdateRequest request);
 
     /**
      * 이벤트 삭제 (관리자용)

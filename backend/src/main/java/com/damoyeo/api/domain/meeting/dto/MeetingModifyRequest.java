@@ -73,7 +73,7 @@ public class MeetingModifyRequest {
      * null이면 기존 값 유지
      * 장소 변경 시 latitude, longitude도 함께 변경하는 것을 권장
      */
-    private String location;
+    private String address;
 
     /**
      * 위도 (Latitude)

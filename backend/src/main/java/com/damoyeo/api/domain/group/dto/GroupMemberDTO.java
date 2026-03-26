@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
  *
  * [사용 위치]
  * - GroupController.getMembers() - 멤버 목록 조회 응답
- * - GroupController.getPendingMembers() - 가입 대기 목록 조회 응답
  *
  * [프론트엔드 응답 예시]
  * GET /api/groups/1/members
@@ -32,7 +31,6 @@ import java.time.LocalDateTime;
  *     "id": 1,
  *     "member": { "id": 5, "nickname": "홍길동", "profileImage": "..." },
  *     "role": "OWNER",
- *     "status": "APPROVED",
  *     "joinedAt": "2024-01-15T10:30:00"
  *   }
  * ]
@@ -47,7 +45,7 @@ public class GroupMemberDTO {
      * GroupMember ID (PK)
      *
      * 멤버십의 고유 식별자입니다.
-     * 승인/거절/강퇴 등의 작업 시 이 ID를 사용합니다.
+     * 강퇴, 역할 변경 등의 작업 시 이 ID를 사용합니다.
      */
     private Long id;
 
@@ -68,23 +66,9 @@ public class GroupMemberDTO {
     private String role;
 
     /**
-     * 가입 상태
-     *
-     * - "PENDING": 가입 대기 중 (승인 대기 목록에 표시)
-     * - "APPROVED": 승인됨 (멤버 목록에 표시)
-     * - "REJECTED": 거절됨
-     *
-     * 상태에 따라 표시되는 목록이 달라집니다.
-     */
-    private String status;
-
-    /**
-     * 가입/신청 일시
+     * 가입 일시
      *
      * GroupMember의 createdAt 값입니다.
-     * - APPROVED: 가입 승인 후 실제 가입일
-     * - PENDING: 가입 신청일
-     *
      * 멤버 목록을 가입일순으로 정렬할 때 사용합니다.
      */
     private LocalDateTime joinedAt;

@@ -40,12 +40,9 @@ import java.util.Map;
  * GET    /api/groups/nearby       - 근처 모임 (위치 기반)
  *
  * === 멤버 관리 ===
- * POST   /api/groups/{id}/join                      - 가입 신청
+ * POST   /api/groups/{id}/join                      - 가입
  * POST   /api/groups/{id}/leave                     - 탈퇴
  * GET    /api/groups/{id}/members                   - 멤버 목록
- * GET    /api/groups/{id}/pending                   - 가입 대기 목록
- * POST   /api/groups/{id}/members/{mid}/approve     - 가입 승인
- * POST   /api/groups/{id}/members/{mid}/reject      - 가입 거절
  * DELETE /api/groups/{id}/members/{mid}             - 멤버 강퇴
  * PATCH  /api/groups/{id}/members/{mid}/role        - 역할 변경
  *
@@ -91,6 +88,7 @@ public class GroupController {
             @AuthenticationPrincipal MemberDTO member,
             @Valid @ModelAttribute GroupCreateRequest request) {
         log.info("Create group: {} by {}", request.getName(), member.getEmail());
+        log.info("getLongitude: {} , request.getLatitude() :  {}", request.getLongitude(), request.getLatitude());
         return ResponseEntity.ok(groupService.create(member.getEmail(), request));
     }
 
@@ -132,7 +130,7 @@ public class GroupController {
     public ResponseEntity<GroupDTO> modify(
             @PathVariable Long id,
             @AuthenticationPrincipal MemberDTO member,
-            @Valid @RequestBody GroupModifyRequest request) {
+            @Valid @ModelAttribute GroupModifyRequest request) {
         return ResponseEntity.ok(groupService.modify(id, member.getEmail(), request));
     }
 
@@ -162,21 +160,26 @@ public class GroupController {
     // ========================================================================
 
     /**
-     * 모임 목록 조회 (페이지네이션)
+     * 모임 목록 조회 (페이지네이션 + 검색 + 정렬)
      *
      * [프론트엔드 요청]
      * GET /api/groups?page=1&size=10
      * GET /api/groups?categoryId=1&page=1&size=10
+     * GET /api/groups?keyword=러닝&page=1&size=10
+     * GET /api/groups?keyword=러닝&categoryId=1&sort=popular
      *
-     * @RequestParam(required = false): categoryId가 없으면 전체 조회
-     * PageRequestDTO: 쿼리 파라미터에서 page, size를 자동 바인딩
+     * @param categoryId 카테고리 필터 (선택)
+     * @param keyword 검색어 - 모임 이름 검색 (선택)
+     * @param sort 정렬 기준 - latest(최신순), popular(인기순), 기본값 latest
      */
     @GetMapping
     @Operation(summary = "모임 목록 조회")
     public ResponseEntity<PageResponseDTO<GroupDTO>> getList(
             @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "latest") String sort,
             PageRequestDTO pageRequestDTO) {
-        return ResponseEntity.ok(groupService.getList(pageRequestDTO, categoryId));
+        return ResponseEntity.ok(groupService.getList(pageRequestDTO, categoryId, keyword, sort));
     }
 
     /**
@@ -202,9 +205,6 @@ public class GroupController {
      * [프론트엔드 요청]
      * GET /api/groups/my
      * Authorization: Bearer {accessToken}
-     *
-     * [조건]
-     * 승인된 멤버(APPROVED)로 가입한 모임만 조회
      */
     @GetMapping("/my")
     @Operation(summary = "내 모임 목록")
@@ -255,18 +255,17 @@ public class GroupController {
     // ========================================================================
 
     /**
-     * 모임 가입 신청
+     * 모임 가입
      *
      * [프론트엔드 요청]
      * POST /api/groups/1/join
      * Authorization: Bearer {accessToken}
      *
      * [동작]
-     * - 공개 모임: 즉시 승인 (APPROVED)
-     * - 비공개 모임: 대기 상태 (PENDING)
+     * 즉시 가입 처리 (APPROVED)
      */
     @PostMapping("/{id}/join")
-    @Operation(summary = "모임 가입 신청")
+    @Operation(summary = "모임 가입")
     public ResponseEntity<Map<String, String>> join(
             @PathVariable Long id,
             @AuthenticationPrincipal MemberDTO member) {
@@ -298,9 +297,6 @@ public class GroupController {
      *
      * [프론트엔드 요청]
      * GET /api/groups/1/members
-     * GET /api/groups/1/members?status=APPROVED
-     *
-     * @param status 조회할 상태 (APPROVED, PENDING 등), 기본값 APPROVED
      */
     @GetMapping("/{id}/members")
     @Operation(summary = "모임 멤버 목록")
@@ -308,70 +304,6 @@ public class GroupController {
             @PathVariable Long id,
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(groupService.getMembers(id, status));
-    }
-
-    /**
-     * 가입 대기 목록 조회 (관리자용)
-     *
-     * [권한] 모임장(OWNER) 또는 운영진(MANAGER)
-     *
-     * [프론트엔드 요청]
-     * GET /api/groups/1/pending
-     * Authorization: Bearer {accessToken}
-     *
-     * [응답]
-     * PENDING 상태인 멤버 목록
-     */
-    @GetMapping("/{id}/pending")
-    @Operation(summary = "가입 대기 목록 (관리자용)")
-    public ResponseEntity<List<GroupMemberDTO>> getPendingMembers(
-            @PathVariable Long id,
-            @AuthenticationPrincipal MemberDTO member) {
-        return ResponseEntity.ok(groupService.getPendingMembers(id, member.getEmail()));
-    }
-
-    /**
-     * 가입 승인
-     *
-     * [권한] 모임장(OWNER) 또는 운영진(MANAGER)
-     *
-     * [프론트엔드 요청]
-     * POST /api/groups/1/members/5/approve
-     * Authorization: Bearer {accessToken}
-     *
-     * [동작]
-     * PENDING → APPROVED
-     */
-    @PostMapping("/{id}/members/{memberId}/approve")
-    @Operation(summary = "가입 승인")
-    public ResponseEntity<Map<String, String>> approveMember(
-            @PathVariable Long id,
-            @PathVariable Long memberId,
-            @AuthenticationPrincipal MemberDTO member) {
-        groupService.approveMember(id, memberId, member.getEmail());
-        return ResponseEntity.ok(Map.of("result", "SUCCESS"));
-    }
-
-    /**
-     * 가입 거절
-     *
-     * [권한] 모임장(OWNER) 또는 운영진(MANAGER)
-     *
-     * [프론트엔드 요청]
-     * POST /api/groups/1/members/5/reject
-     * Authorization: Bearer {accessToken}
-     *
-     * [동작]
-     * PENDING → REJECTED
-     */
-    @PostMapping("/{id}/members/{memberId}/reject")
-    @Operation(summary = "가입 거절")
-    public ResponseEntity<Map<String, String>> rejectMember(
-            @PathVariable Long id,
-            @PathVariable Long memberId,
-            @AuthenticationPrincipal MemberDTO member) {
-        groupService.rejectMember(id, memberId, member.getEmail());
-        return ResponseEntity.ok(Map.of("result", "SUCCESS"));
     }
 
     /**

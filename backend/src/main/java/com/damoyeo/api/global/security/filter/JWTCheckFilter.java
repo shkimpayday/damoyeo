@@ -95,10 +95,14 @@ public class JWTCheckFilter extends OncePerRequestFilter {
                 path.startsWith("/api/email/") ||  // 이메일 인증 API
                 path.startsWith("/api/email/send") ||
                 path.startsWith("/api/meetings/upcoming") ||
+                path.startsWith("/api/payments/cancel") ||  // 결제 취소 콜백 (카카오페이 redirect)
+                path.startsWith("/api/payments/fail") ||    // 결제 실패 콜백 (카카오페이 redirect)
+                path.startsWith("/ws/") ||  // WebSocket 엔드포인트 (JWT는 JWTChannelInterceptor에서 검증)
                 path.startsWith("/swagger-ui") ||
                 path.startsWith("/api-docs") ||
                 path.startsWith("/v3/api-docs") ||
-                path.startsWith("/uploads")) {  // 정적 파일 (프로필 이미지 등)
+                path.startsWith("/uploads") ||  // 정적 파일 (프로필 이미지 등)
+                path.equals("/favicon.ico")) {  // 파비콘
             return true;
         }
 
@@ -110,8 +114,9 @@ public class JWTCheckFilter extends OncePerRequestFilter {
             if (path.startsWith("/api/categories")) {
                 return true;
             }
-            // 이벤트/배너 조회 (공개 API)
-            if (path.startsWith("/api/events")) {
+            // 이벤트/배너 조회 (공개 API) - 관리자 전용 목록(/api/events)은 제외
+            if (path.equals("/api/events/banners") ||
+                    path.matches("/api/events/\\d+")) {
                 return true;
             }
         }

@@ -176,6 +176,19 @@ public class MeetingDTO {
     private String myStatus;  // ATTENDING, MAYBE, NOT_ATTENDING, null
 
     /**
+     * 현재 로그인한 사용자의 정모 수정/취소 권한 여부
+     *
+     * [권한이 있는 경우]
+     * - 정모 생성자
+     * - 모임 OWNER (모임장)
+     * - 모임 MANAGER (운영진)
+     *
+     * [프론트엔드 활용]
+     * canEdit이 true인 경우에만 수정/취소 버튼을 표시합니다.
+     */
+    private Boolean canEdit;
+
+    /**
      * 정모 생성일시
      *
      * BaseEntity에서 상속받은 createdAt

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { useMeetingDetail, useUpdateMeeting } from "@/features/meetings";
 import { ResultModal, Spinner, EmptyState } from "@/components/ui";
 import { toInputDateTimeFormat } from "@/utils/date";
+import { AxiosError } from "axios";
 
 function MeetingEditPage() {
   const { meetingId } = useParams<{ meetingId: string }>();
@@ -50,6 +51,20 @@ function MeetingEditPage() {
     );
   }
 
+  // 수정 권한 확인 (생성자 또는 OWNER/MANAGER)
+  if (!meeting.canEdit) {
+    return (
+      <div className="p-4">
+        <EmptyState
+          icon="🔒"
+          title="수정 권한이 없습니다"
+          description="정모 생성자 또는 모임 운영진만 수정할 수 있습니다."
+          action={{ label: "돌아가기", onClick: () => navigate(-1) }}
+        />
+      </div>
+    );
+  }
+
   // 수정 가능한 상태인지 확인
   if (meeting.status !== "SCHEDULED") {
     return (
@@ -81,8 +96,15 @@ function MeetingEditPage() {
       });
       setModalContent({ title: "수정 완료", content: "정모가 수정되었습니다!" });
       setShowModal(true);
-    } catch {
-      setModalContent({ title: "수정 실패", content: "정모 수정에 실패했습니다." });
+    } catch(error) {
+      let message = "정모 수정에 실패했습니다.";
+      if(error instanceof AxiosError && error.response?.data) {
+        const errorData = error.response.data;
+        const firstError = Object.values(errorData)[0];
+        if(firstError) message = String(firstError);
+      }
+
+      setModalContent({ title: "수정 실패", content: message });
       setShowModal(true);
     }
   };

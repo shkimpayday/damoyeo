@@ -20,11 +20,10 @@ import java.util.Optional;
  * [주요 기능]
  * - 특정 모임의 멤버 목록 조회
  * - 특정 회원이 가입한 모임 목록 조회
- * - 가입 신청 상태 확인
  * - 멤버 수 집계
  *
  * [사용 위치]
- * - GroupServiceImpl: 가입/탈퇴/승인/거절 처리
+ * - GroupServiceImpl: 가입/탈퇴/강퇴 처리
  * - MeetingServiceImpl: 정모 참석 자격 확인
  */
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
@@ -35,20 +34,14 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      * [용도]
      * 특정 상태의 멤버를 조회합니다.
      *
-     * [사용 예시]
-     * - 승인된 멤버 목록: status = APPROVED
-     * - 가입 대기 목록: status = PENDING
-     *
      * [특징]
      * fetch join으로 회원 정보를 함께 조회하여 N+1 문제를 방지합니다.
      *
      * @param groupId 모임 ID
-     * @param status 조회할 상태 (PENDING, APPROVED, REJECTED)
+     * @param status 조회할 상태 (APPROVED, BANNED)
      * @return 해당 상태의 멤버 목록
      *
-     * 호출 위치:
-     * - GroupServiceImpl.getMembers() - 승인된 멤버
-     * - GroupServiceImpl.getPendingMembers() - 가입 대기 목록
+     * 호출 위치: GroupServiceImpl.getMembers()
      */
     @Query("select gm from GroupMember gm " +
             "left join fetch gm.member " +
@@ -60,20 +53,17 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      * 특정 모임에서 특정 회원의 멤버십 조회
      *
      * [용도]
-     * 회원이 특정 모임에 가입되어 있는지, 어떤 상태인지 확인합니다.
+     * 회원이 특정 모임에 가입되어 있는지, 어떤 역할인지 확인합니다.
      *
      * [사용 예시]
-     * - 가입 신청 전: 이미 신청했는지 확인
-     * - 가입 승인/거절: 해당 멤버십 찾아서 상태 변경
+     * - 가입 전: 이미 가입되어 있는지 확인
      * - 권한 검사: 멤버인지, 역할이 무엇인지 확인
      *
      * @param groupId 모임 ID
      * @param memberId 회원 ID
      * @return 멤버십 정보 (없으면 Optional.empty())
      *
-     * 호출 위치:
-     * - GroupServiceImpl.join() - 중복 가입 방지
-     * - GroupServiceImpl.approve/reject() - 멤버십 상태 변경
+     * 호출 위치: GroupServiceImpl.join() - 중복 가입 방지
      */
     @Query("select gm from GroupMember gm " +
             "where gm.group.id = :groupId and gm.member.id = :memberId")
@@ -84,12 +74,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      * 내가 가입한 모임 목록 조회
      *
      * [용도]
-     * 특정 회원이 정식 멤버로 가입한 모임 목록을 조회합니다.
+     * 특정 회원이 가입한 모임 목록을 조회합니다.
      * 마이페이지의 "내 모임" 탭에서 사용됩니다.
-     *
-     * [조건]
-     * - status = APPROVED (승인된 멤버만)
-     * - PENDING(대기중), REJECTED(거절됨)는 제외
      *
      * [특징]
      * 모임 정보와 카테고리를 함께 조회하여
@@ -103,24 +89,21 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     @Query("select gm from GroupMember gm " +
             "left join fetch gm.group g " +
             "left join fetch g.category " +
-            "where gm.member.id = :memberId and gm.status = 'APPROVED'")
+            "where gm.member.id = :memberId and gm.status = 'APPROVED' and g.status = 'ACTIVE' ")
     List<GroupMember> findMyGroups(@Param("memberId") Long memberId);
 
     /**
-     * 승인된 멤버 수 집계
+     * 멤버 수 집계
      *
      * [용도]
      * 모임의 현재 멤버 수를 계산합니다.
      *
      * [사용 예시]
-     * - 가입 신청 시: 정원(maxMembers) 초과 여부 확인
+     * - 가입 시: 정원(maxMembers) 초과 여부 확인
      * - 모임 목록 표시: "멤버 15명" 형태로 표시
      *
-     * [주의]
-     * PENDING(대기중), REJECTED(거절됨)는 카운트에서 제외합니다.
-     *
      * @param groupId 모임 ID
-     * @return 승인된 멤버 수
+     * @return 멤버 수
      *
      * 호출 위치:
      * - GroupServiceImpl.join() - 정원 확인
@@ -134,22 +117,58 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      * 멤버십 존재 여부 확인
      *
      * [용도]
-     * 회원이 특정 모임에 어떤 형태로든 관계가 있는지 빠르게 확인합니다.
+     * 회원이 특정 모임에 이미 가입되어 있는지 빠르게 확인합니다.
      *
      * [특징]
-     * - 상태(PENDING/APPROVED/REJECTED)와 관계없이 존재 여부만 확인
      * - COUNT 대신 EXISTS를 사용하여 성능 최적화
      * - Spring Data JPA가 자동으로 쿼리 생성
      *
      * [사용 예시]
-     * - 가입 신청 버튼 활성화/비활성화 결정
-     * - 이미 가입 신청한 사용자에게 "대기중" 표시
+     * - 가입 버튼 활성화/비활성화 결정
+     * - 이미 가입한 사용자에게 "탈퇴" 버튼 표시
      *
      * @param groupId 모임 ID
      * @param memberId 회원 ID
-     * @return 존재 여부 (true: 관계 있음, false: 관계 없음)
+     * @return 존재 여부 (true: 가입됨, false: 미가입)
      *
      * 호출 위치: GroupServiceImpl에서 중복 체크 시
      */
     boolean existsByGroupIdAndMemberId(Long groupId, Long memberId);
+
+    // ========================================================================
+    // 관리자용 쿼리
+    // ========================================================================
+
+    /**
+     * 회원이 가입한 모임 수 집계
+     *
+     * [용도]
+     * 관리자 회원 목록에서 각 회원이 가입한 모임 수 표시
+     *
+     * @param memberId 회원 ID
+     * @return 가입한 모임 수
+     */
+    @Query("select count(gm) from GroupMember gm " +
+            "where gm.member.id = :memberId and gm.status = 'APPROVED'")
+    int countByMemberId(@Param("memberId") Long memberId);
+
+    /**
+     * 회원이 가입한 모임 목록 조회 (상태별)
+     *
+     * [용도]
+     * 공개 프로필에서 회원이 가입한 모임 목록을 표시합니다.
+     *
+     * [특징]
+     * fetch join으로 모임 정보와 카테고리를 함께 조회합니다.
+     *
+     * @param memberId 회원 ID
+     * @param status 조회할 상태 (APPROVED, BANNED)
+     * @return 해당 상태의 모임 멤버십 목록
+     */
+    @Query("select gm from GroupMember gm " +
+            "left join fetch gm.group g " +
+            "left join fetch g.category " +
+            "where gm.member.id = :memberId and gm.status = :status")
+    List<GroupMember> findByMemberIdAndStatus(@Param("memberId") Long memberId,
+                                              @Param("status") JoinStatus status);
 }

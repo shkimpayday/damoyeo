@@ -3,6 +3,7 @@ package com.damoyeo.api.domain.event.service;
 import com.damoyeo.api.domain.event.dto.EventBannerDTO;
 import com.damoyeo.api.domain.event.dto.EventCreateRequest;
 import com.damoyeo.api.domain.event.dto.EventDetailDTO;
+import com.damoyeo.api.domain.event.dto.EventUpdateRequest;
 import com.damoyeo.api.domain.event.entity.Event;
 import com.damoyeo.api.domain.event.entity.EventType;
 import com.damoyeo.api.domain.event.repository.EventRepository;
@@ -155,6 +156,54 @@ public class EventServiceImpl implements EventService {
         log.info("Event created: id={}, title={}", saved.getId(), saved.getTitle());
 
         return saved.getId();
+    }
+
+    /**
+     * 이벤트 수정 (관리자용)
+     *
+     * <p>수정 프로세스:</p>
+     * <ol>
+     *   <li>이벤트 존재 여부 확인</li>
+     *   <li>이벤트 타입 유효성 검사 (기존 타입 유지 가능)</li>
+     *   <li>엔티티의 update() 메서드로 필드 업데이트</li>
+     *   <li>수정된 이벤트를 DTO로 변환하여 반환</li>
+     * </ol>
+     *
+     * @param eventId 이벤트 ID
+     * @param request 이벤트 수정 요청 DTO
+     * @return 수정된 이벤트 상세 정보
+     * @throws CustomException 이벤트가 존재하지 않으면 404 에러
+     */
+    @Override
+    public EventDetailDTO updateEvent(Long eventId, EventUpdateRequest request) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> CustomException.notFound("이벤트를 찾을 수 없습니다."));
+
+        // 이벤트 타입 변환 (요청에 없으면 기존 타입 유지)
+        EventType eventType = event.getType();
+        if (request.getType() != null && !request.getType().isEmpty()) {
+            try {
+                eventType = EventType.valueOf(request.getType());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid event type: {}, keeping existing type: {}", request.getType(), eventType);
+            }
+        }
+
+        event.update(
+                request.getTitle(),
+                request.getDescription(),
+                request.getContent(),
+                request.getImageUrl(),
+                request.getLinkUrl(),
+                eventType,
+                request.getStartDate(),
+                request.getEndDate(),
+                request.getDisplayOrder() != null ? request.getDisplayOrder() : event.getDisplayOrder(),
+                request.getTags()
+        );
+
+        log.info("Event updated: id={}, title={}", eventId, event.getTitle());
+        return toEventDetailDTO(event);
     }
 
     /**

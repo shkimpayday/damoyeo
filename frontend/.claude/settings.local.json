@@ -2,7 +2,23 @@
   "permissions": {
     "allow": [
       "mcp__playwright__browser_close",
-      "mcp__playwright__browser_navigate"
+      "mcp__playwright__browser_navigate",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(npx tsc:*)",
+      "Read(//d/damoyeo/backend/**)",
+      "Bash(./gradlew compileJava:*)",
+      "Bash(where:*)",
+      "Bash(java:*)",
+      "mcp__playwright__browser_press_key",
+      "Bash(claude:*)",
+      "Bash(mysql:*)",
+      "Bash(rd /s /q \"C:\\\\Users\\\\11\\\\.gradle\\\\caches\")",
+      "Bash(./gradlew:*)"
+    ],
+    "additionalDirectories": [
+      "d:\\damoyeo\\backend\\src\\main\\java\\com\\damoyeo\\api\\domain\\support\\entity"
     ]
   }
 }

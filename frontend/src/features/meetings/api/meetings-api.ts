@@ -10,7 +10,7 @@ import type {
 } from "../types";
 
 /**
- * 모임의 정모 목록 조회
+ * 모임의 정모 목록 조회 (전체)
  */
 export const getMeetingsByGroup = async (
   groupId: number
@@ -22,16 +22,38 @@ export const getMeetingsByGroup = async (
 };
 
 /**
+ * 모임의 예정된 정모 목록 조회
+ * (SCHEDULED, ONGOING 상태)
+ */
+export const getUpcomingMeetingsByGroup = async (
+  groupId: number
+): Promise<MeetingListDTO[]> => {
+  const res = await jwtAxios.get(
+    `${ENV.API_URL}/api/meetings/group/${groupId}/upcoming`
+  );
+  return res.data;
+};
+
+/**
+ * 모임의 지난 정모 목록 조회
+ * (COMPLETED 상태)
+ */
+export const getPastMeetingsByGroup = async (
+  groupId: number
+): Promise<MeetingListDTO[]> => {
+  const res = await jwtAxios.get(
+    `${ENV.API_URL}/api/meetings/group/${groupId}/past`
+  );
+  return res.data;
+};
+
+/**
  * 정모 생성
  */
 export const createMeeting = async (
-  groupId: number,
   request: MeetingCreateRequest
 ): Promise<MeetingDTO> => {
-  const res = await jwtAxios.post(
-    `${ENV.API_URL}/api/meetings`,
-    { ...request, groupId }
-  );
+  const res = await jwtAxios.post(`${ENV.API_URL}/api/meetings`, request);
   return res.data;
 };
 

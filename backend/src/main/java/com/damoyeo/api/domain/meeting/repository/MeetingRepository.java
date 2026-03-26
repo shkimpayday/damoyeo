@@ -84,8 +84,8 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
      * 다가오는 정모 조회 (전체)
      *
      * [조건]
-     * - 현재 시간 이후의 정모만
-     * - SCHEDULED 상태인 정모만
+     * - 현재 시간 이후의 정모만 (날짜 기반 필터링)
+     * - 취소된 정모(CANCELLED) 제외
      * - 정모 날짜 오름차순 정렬
      *
      * @param now 현재 시간 (LocalDateTime.now())
@@ -99,7 +99,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Query("select m from Meeting m " +
             "left join fetch m.group g " +
             "left join fetch g.category " +
-            "where m.meetingDate > :now and m.status = 'SCHEDULED' " +
+            "where m.meetingDate > :now and m.status <> 'CANCELLED' " +
             "order by m.meetingDate asc")
     List<Meeting> findUpcomingMeetings(@Param("now") LocalDateTime now);
 
@@ -152,4 +152,122 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     @Query("select count(ma) from MeetingAttendee ma " +
             "where ma.meeting.id = :meetingId and ma.status = 'ATTENDING'")
     int countAttendees(@Param("meetingId") Long meetingId);
+
+    // ========================================================================
+    // 날짜 기반 목록 조회 (예정/지난 정모 분리)
+    // ========================================================================
+
+    /**
+     * 특정 모임의 예정된 정모 목록 조회 (날짜 기반)
+     *
+     * [조건]
+     * - 해당 모임에 속한 정모
+     * - 현재 시간 이후의 정모 (meetingDate > now)
+     * - 취소된 정모(CANCELLED) 제외
+     * - 정모 날짜 오름차순 정렬
+     *
+     * [설계 의도]
+     * status 필드 대신 날짜 기반으로 예정/지난 정모를 구분합니다.
+     * 이 방식이 스케줄러 방식보다 단순하고 정확합니다.
+     *
+     * @param groupId 모임 ID
+     * @param now 현재 시간
+     * @return 예정된 정모 목록
+     */
+    @Query("select m from Meeting m " +
+            "left join fetch m.group " +
+            "where m.group.id = :groupId " +
+            "and m.meetingDate > :now " +
+            "and m.status <> 'CANCELLED' " +
+            "order by m.meetingDate asc")
+    List<Meeting> findUpcomingByGroupId(@Param("groupId") Long groupId,
+                                        @Param("now") LocalDateTime now);
+
+    /**
+     * 특정 모임의 지난 정모 목록 조회 (날짜 기반)
+     *
+     * [조건]
+     * - 해당 모임에 속한 정모
+     * - 현재 시간 이전의 정모 (meetingDate <= now)
+     * - 취소된 정모(CANCELLED) 제외
+     * - 정모 날짜 내림차순 정렬 (최근 지난 정모가 먼저)
+     *
+     * @param groupId 모임 ID
+     * @param now 현재 시간
+     * @return 지난 정모 목록
+     */
+    @Query("select m from Meeting m " +
+            "left join fetch m.group " +
+            "where m.group.id = :groupId " +
+            "and m.meetingDate <= :now " +
+            "and m.status <> 'CANCELLED' " +
+            "order by m.meetingDate desc")
+    List<Meeting> findPastByGroupId(@Param("groupId") Long groupId,
+                                    @Param("now") LocalDateTime now);
+
+    // ========================================================================
+    // 리마인더 스케줄러용 쿼리
+    // ========================================================================
+
+    /**
+     * 1일 전 리마인더 대상 정모 조회
+     *
+     * [조건]
+     * - 정모 시작 시간이 startTime ~ endTime 사이인 정모
+     * - 취소된 정모(CANCELLED) 제외
+     *
+     * [사용 예시]
+     * 매일 오전 9시에 실행하여, 내일 진행되는 정모를 조회합니다.
+     * startTime = 내일 00:00, endTime = 내일 23:59:59
+     *
+     * @param startTime 조회 시작 시간 (내일 시작)
+     * @param endTime 조회 종료 시간 (내일 끝)
+     * @return 1일 전 리마인더 대상 정모 목록
+     */
+    @Query("select m from Meeting m " +
+            "left join fetch m.group " +
+            "where m.meetingDate >= :startTime " +
+            "and m.meetingDate < :endTime " +
+            "and m.status <> 'CANCELLED'")
+    List<Meeting> findMeetingsForDayBeforeReminder(@Param("startTime") LocalDateTime startTime,
+                                                   @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * 3시간 전 리마인더 대상 정모 조회
+     *
+     * [조건]
+     * - 정모 시작 시간이 startTime ~ endTime 사이인 정모
+     * - 취소된 정모(CANCELLED) 제외
+     *
+     * [사용 예시]
+     * 매 시간 정각에 실행하여, 3시간 후 시작하는 정모를 조회합니다.
+     * startTime = now + 3시간, endTime = now + 4시간
+     *
+     * @param startTime 조회 시작 시간
+     * @param endTime 조회 종료 시간
+     * @return 3시간 전 리마인더 대상 정모 목록
+     */
+    @Query("select m from Meeting m " +
+            "left join fetch m.group " +
+            "where m.meetingDate >= :startTime " +
+            "and m.meetingDate < :endTime " +
+            "and m.status <> 'CANCELLED'")
+    List<Meeting> findMeetingsForImminentReminder(@Param("startTime") LocalDateTime startTime,
+                                                  @Param("endTime") LocalDateTime endTime);
+
+    // ========================================================================
+    // 관리자용 쿼리
+    // ========================================================================
+
+    /**
+     * 예정된 정모 수 집계
+     *
+     * [용도]
+     * 관리자 대시보드에서 예정된 정모 수 표시
+     *
+     * @param now 현재 시간
+     * @return 예정된 정모 수
+     */
+    @Query("select count(m) from Meeting m where m.meetingDate > :now and m.status <> 'CANCELLED'")
+    long countUpcomingMeetings(@Param("now") LocalDateTime now);
 }

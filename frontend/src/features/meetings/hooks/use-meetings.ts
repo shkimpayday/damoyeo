@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getMeetingsByGroup,
+  getUpcomingMeetingsByGroup,
+  getPastMeetingsByGroup,
   getMeeting,
   createMeeting,
   updateMeeting,
@@ -14,12 +16,38 @@ import {
 import type { MeetingCreateRequest, MeetingUpdateRequest, AttendRequest } from "../types";
 
 /**
- * 모임의 정모 목록 조회
+ * 모임의 정모 목록 조회 (전체)
  */
 export const useMeetingsByGroup = (groupId: number) => {
   return useQuery({
     queryKey: ["meetings", "group", groupId],
     queryFn: () => getMeetingsByGroup(groupId),
+    enabled: !!groupId,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+/**
+ * 모임의 예정된 정모 목록 조회
+ * (SCHEDULED, ONGOING 상태)
+ */
+export const useUpcomingMeetingsByGroup = (groupId: number) => {
+  return useQuery({
+    queryKey: ["meetings", "group", groupId, "upcoming"],
+    queryFn: () => getUpcomingMeetingsByGroup(groupId),
+    enabled: !!groupId,
+    staleTime: 2 * 60 * 1000,
+  });
+};
+
+/**
+ * 모임의 지난 정모 목록 조회
+ * (COMPLETED 상태)
+ */
+export const usePastMeetingsByGroup = (groupId: number) => {
+  return useQuery({
+    queryKey: ["meetings", "group", groupId, "past"],
+    queryFn: () => getPastMeetingsByGroup(groupId),
     enabled: !!groupId,
     staleTime: 2 * 60 * 1000,
   });
@@ -84,7 +112,7 @@ export const useCreateMeeting = () => {
     }: {
       groupId: number;
       request: MeetingCreateRequest;
-    }) => createMeeting(groupId, request),
+    }) => createMeeting({ ...request, groupId }),
     onSuccess: (_, { groupId }) => {
       queryClient.invalidateQueries({
         queryKey: ["meetings", "group", groupId],

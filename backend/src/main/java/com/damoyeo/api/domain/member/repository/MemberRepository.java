@@ -1,11 +1,14 @@
 package com.damoyeo.api.domain.member.repository;
 
 import com.damoyeo.api.domain.member.entity.Member;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -52,4 +55,48 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      * [사용] signup(), modify(): 닉네임 중복 체크
      */
     boolean existsByNickname(String nickname);
+
+    // ========================================================================
+    // 관리자용 쿼리
+    // ========================================================================
+
+    /**
+     * 특정 기간 내 가입한 회원 수
+     *
+     * [용도]
+     * 관리자 대시보드에서 오늘 신규 가입자 수 조회
+     *
+     * @param start 시작 시간
+     * @param end 종료 시간
+     * @return 해당 기간 내 가입한 회원 수
+     */
+    @Query("select count(m) from Member m where m.createdAt >= :start and m.createdAt < :end")
+    long countByCreatedAtBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
+     * 회원 검색 (이메일 또는 닉네임)
+     *
+     * [용도]
+     * 관리자 페이지에서 회원 검색
+     *
+     * @param keyword 검색어
+     * @param pageable 페이지 정보
+     * @return 검색된 회원 목록
+     */
+    @EntityGraph(attributePaths = {"memberRoleList"})
+    @Query("select m from Member m where m.email like %:keyword% or m.nickname like %:keyword%")
+    Page<Member> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 전체 회원 조회 (역할 포함)
+     *
+     * [용도]
+     * 관리자 페이지에서 회원 목록 조회
+     *
+     * @param pageable 페이지 정보
+     * @return 회원 목록
+     */
+    @EntityGraph(attributePaths = {"memberRoleList"})
+    @Query("select m from Member m")
+    Page<Member> findAllWithRoles(Pageable pageable);
 }

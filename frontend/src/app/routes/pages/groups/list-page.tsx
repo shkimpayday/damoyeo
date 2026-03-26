@@ -85,7 +85,7 @@ function GroupListPage() {
       {/* 상단 필터 영역 */}
       <div className="sticky top-[104px] md:top-16 z-40 bg-white border-b border-gray-100">
         {/* 카테고리 필터 - 가로 스크롤 */}
-        <div className="app-content py-4 overflow-x-auto scrollbar-hide">
+        <div className="py-4 overflow-x-auto scrollbar-hide">
           <div className="flex gap-2">
             {/* 전체 버튼 */}
             <button
@@ -113,7 +113,7 @@ function GroupListPage() {
         </div>
 
         {/* 정렬 및 결과 수 */}
-        <div className="app-content py-3 flex items-center justify-between border-t border-gray-50">
+        <div className="py-3 flex items-center justify-between border-t border-gray-50">
           {/* 정렬 드롭다운 */}
           <div className="relative">
             <button
@@ -158,7 +158,7 @@ function GroupListPage() {
 
       {/* 선택된 카테고리 태그 */}
       {selectedCategory && (
-        <div className="app-content py-4">
+        <div className="py-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 rounded-full">
             <span className="text-sm font-medium text-primary-700">
               {selectedCategory.icon} {selectedCategory.name}
@@ -174,7 +174,7 @@ function GroupListPage() {
       )}
 
       {/* 모임 그리드 */}
-      <div className="app-content section-spacing">
+      <div className="section-spacing">
         {isLoading ? (
           <div className="flex items-center justify-center h-60">
             <Spinner size="lg" />

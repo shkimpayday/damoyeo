@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { ProfileCard, useAuth } from "@/features/auth";
+import { PremiumStatusCard } from "@/features/payment";
 
 interface MenuItemProps {
   icon: string;
@@ -36,6 +37,11 @@ function ProfilePage() {
       {/* Profile Header */}
       <ProfileCard />
 
+      {/* 프리미엄 상태 */}
+      <div className="mt-4">
+        <PremiumStatusCard />
+      </div>
+
       {/* Menu List */}
       <div className="mt-4 bg-white rounded-xl shadow-sm divide-y divide-gray-100">
         <MenuItem
@@ -53,8 +59,6 @@ function ProfilePage() {
           label="알림 설정"
           onClick={() => navigate("/notifications")}
         />
-        <MenuItem icon="❓" label="고객센터" onClick={() => {}} />
-        <MenuItem icon="📜" label="이용약관" onClick={() => {}} />
       </div>
 
       {/* App Info */}

@@ -10,8 +10,11 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from "axios";
-import { getCookie, setCookie, removeCookie } from "@/lib/cookie";
+import { getCookie, setCookie } from "@/lib/cookie";
 import { ENV } from "@/config";
+
+// 세션 만료 이벤트 (Refresh Token 만료 시 발생)
+export const SESSION_EXPIRED_EVENT = "session-expired";
 
 // 공개 API용 axios 인스턴스
 export const publicAxios = axios.create({
@@ -25,6 +28,7 @@ export const jwtAxios = axios.create({
 
 // 토큰 갱신 상태 관리
 let isRefreshing = false;
+let hasRedirected = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
   reject: (error: Error) => void;
@@ -45,31 +49,36 @@ const processQueue = (error: Error | null, token: string | null) => {
 };
 
 /**
- * 로그인 페이지로 리다이렉트
+ * 세션 만료 처리 (모달을 통해 안내)
+ *
+ * 동시에 여러 요청이 토큰 갱신 실패 시 이벤트가 중복 발생하지 않도록 보호합니다.
  */
 const redirectToLogin = () => {
-  removeCookie("member");
-  if (
-    typeof window !== "undefined" &&
-    !window.location.pathname.includes("/member/login")
-  ) {
-    window.location.href = "/member/login";
+  if (hasRedirected) return;
+  hasRedirected = true;
+  if (typeof window !== "undefined") {
+    // 세션 만료 이벤트 발생 → SessionExpiredModal에서 처리
+    window.dispatchEvent(new CustomEvent("session-expired"));
+    // 다음 로그인 이후를 위해 플래그를 초기화 (이벤트 핸들러에서 처리됨)
+    window.addEventListener("session-expired-handled", () => {
+      hasRedirected = false;
+    }, { once: true });
   }
 };
 
 /**
  * JWT 토큰 갱신
+ *
+ * ⚠️ 주의: Authorization 헤더에 Refresh Token을 전달해야 합니다 (Access Token 아님!)
  */
 const refreshJWT = async (
-  accessToken: string,
+  _accessToken: string,
   refreshToken: string
 ): Promise<{ accessToken: string; refreshToken: string }> => {
-  const header = { headers: { Authorization: `Bearer ${accessToken}` } };
+  // ✅ Refresh Token을 Authorization 헤더로 전달 (백엔드 요구사항)
+  const header = { headers: { Authorization: `Bearer ${refreshToken}` } };
 
-  const res = await axios.get(
-    `${ENV.API_URL}/api/member/refresh?refreshToken=${refreshToken}`,
-    header
-  );
+  const res = await axios.get(`${ENV.API_URL}/api/member/refresh`, header);
 
   return res.data;
 };

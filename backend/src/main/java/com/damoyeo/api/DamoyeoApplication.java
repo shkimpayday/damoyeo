@@ -3,6 +3,7 @@ package com.damoyeo.api;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * ============================================================================
@@ -24,12 +25,19 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  *   - 엔티티가 생성/수정될 때 자동으로 시간을 기록해줍니다.
  *   - 예: Member가 생성되면 createdAt에 현재 시간이 자동으로 들어감
  *
+ * ▶ @EnableScheduling
+ *   Spring의 스케줄링 기능을 활성화합니다.
+ *   - @Scheduled 어노테이션이 동작하려면 필수!
+ *   - 정기적으로 실행해야 하는 작업에 사용됩니다.
+ *   - 예: 정모 상태 자동 업데이트 (MeetingStatusScheduler)
+ *
  * [실행 방법]
  *   ./gradlew bootRun 또는 IDE에서 이 클래스를 Run
  *   → 내장 톰캣이 8080 포트에서 시작됨
  */
 @SpringBootApplication
 @EnableJpaAuditing
+@EnableScheduling
 public class DamoyeoApplication {
 
     public static void main(String[] args) {

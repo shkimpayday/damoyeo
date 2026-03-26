@@ -109,6 +109,15 @@ public class Member extends BaseEntity {
     private String address;
 
     /**
+     * 활동 중인 모임 공개 여부 (프리미엄 회원 전용 설정)
+     *
+     * true: 공개 (기본값)
+     * false: 비공개
+     */
+    @Builder.Default
+    private boolean showJoinedGroups = true;
+
+    /**
      * 권한 목록
      *
      * @ElementCollection: 별도 테이블(member_role)에 저장
@@ -157,5 +166,10 @@ public class Member extends BaseEntity {
         this.lat = lat;
         this.lng = lng;
         this.address = address;
+    }
+
+    /** 활동 모임 공개 여부 변경 (프리미엄 전용) */
+    public void changeShowJoinedGroups(boolean showJoinedGroups) {
+        this.showJoinedGroups = showJoinedGroups;
     }
 }

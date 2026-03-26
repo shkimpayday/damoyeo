@@ -1,8 +1,13 @@
 package com.damoyeo.api.domain.member.service;
 
+import com.damoyeo.api.domain.group.entity.GroupMember;
+import com.damoyeo.api.domain.group.entity.GroupStatus;
+import com.damoyeo.api.domain.group.entity.JoinStatus;
+import com.damoyeo.api.domain.group.repository.GroupMemberRepository;
 import com.damoyeo.api.domain.member.dto.MemberDTO;
 import com.damoyeo.api.domain.member.dto.MemberModifyRequest;
 import com.damoyeo.api.domain.member.dto.MemberSignupRequest;
+import com.damoyeo.api.domain.member.dto.PublicProfileDTO;
 import com.damoyeo.api.domain.member.entity.Member;
 import com.damoyeo.api.domain.member.entity.MemberRole;
 import com.damoyeo.api.domain.member.repository.MemberRepository;
@@ -18,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +47,9 @@ public class MemberServiceImpl implements MemberService {
 
     /** 회원 DB 접근 */
     private final MemberRepository memberRepository;
+
+    /** 모임 멤버 DB 접근 */
+    private final GroupMemberRepository groupMemberRepository;
 
     /** 비밀번호 암호화 (BCrypt) */
     private final PasswordEncoder passwordEncoder;
@@ -152,6 +161,15 @@ public class MemberServiceImpl implements MemberService {
             member.changeIntroduction(request.getIntroduction());
         }
 
+        // 활동 모임 공개 여부 변경 (프리미엄 회원만 가능)
+        if (request.getShowJoinedGroups() != null) {
+            boolean isPremium = member.getMemberRoleList().contains(MemberRole.PREMIUM);
+            if (isPremium) {
+                member.changeShowJoinedGroups(request.getShowJoinedGroups());
+            }
+            // 프리미엄이 아닌 경우 무시 (에러 없이)
+        }
+
         // JPA 더티 체킹으로 자동 UPDATE (save 호출 불필요)
         return entityToDTO(member);
     }
@@ -220,6 +238,58 @@ public class MemberServiceImpl implements MemberService {
     }
 
     /**
+     * 공개 프로필 조회
+     *
+     * [반환 정보]
+     * - 닉네임, 프로필 이미지, 자기소개, 지역
+     * - 가입일, 가입한 모임 수
+     * - 가입한 공개 모임 목록
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public PublicProfileDTO getPublicProfile(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> CustomException.notFound("회원을 찾을 수 없습니다."));
+
+        List<PublicProfileDTO.JoinedGroupDTO> joinedGroups;
+
+        // 회원이 활동 모임 공개를 설정한 경우에만 조회
+        if (member.isShowJoinedGroups()) {
+            List<GroupMember> groupMembers = groupMemberRepository.findByMemberIdAndStatus(
+                    memberId, JoinStatus.APPROVED);
+
+            joinedGroups = groupMembers.stream()
+                    // 공개 모임 + 활성 상태 모임만 표시 (INACTIVE, DELETED 제외)
+                    .filter(gm -> gm.getGroup().isPublic()
+                            && gm.getGroup().getStatus() == GroupStatus.ACTIVE)
+                    .map(gm -> PublicProfileDTO.JoinedGroupDTO.builder()
+                            .id(gm.getGroup().getId())
+                            .name(gm.getGroup().getName())
+                            .thumbnailImage(gm.getGroup().getCoverImage())
+                            .categoryName(gm.getGroup().getCategory() != null
+                                    ? gm.getGroup().getCategory().getName()
+                                    : "미분류")
+                            .build())
+                    .collect(Collectors.toList());
+        } else {
+            // 비공개 설정 시 빈 목록 반환
+            joinedGroups = List.of();
+        }
+
+        return PublicProfileDTO.builder()
+                .id(member.getId())
+                .nickname(member.getNickname())
+                .profileImage(member.getProfileImage())
+                .introduction(member.getIntroduction())
+                .address(member.getAddress())
+                .createdAt(member.getCreatedAt())
+                .groupCount(joinedGroups.size())
+                .joinedGroups(joinedGroups)
+                .showJoinedGroups(member.isShowJoinedGroups())
+                .build();
+    }
+
+    /**
      * Entity → DTO 변환 헬퍼 메서드
      *
      * [주의] password는 포함하지 않음 (보안)
@@ -235,6 +305,7 @@ public class MemberServiceImpl implements MemberService {
                 .roleNames(member.getMemberRoleList().stream()
                         .map(Enum::name)  // MemberRole.USER → "USER"
                         .collect(Collectors.toList()))
+                .showJoinedGroups(member.isShowJoinedGroups())
                 .build();
     }
 }

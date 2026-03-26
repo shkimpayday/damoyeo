@@ -63,6 +63,7 @@ public class APILoginSuccessHandler implements AuthenticationSuccessHandler {
      *
      * [응답 형식]
      * {
+     *   "id": 1,
      *   "accessToken": "eyJ...",
      *   "refreshToken": "eyJ...",
      *   "email": "user@example.com",
@@ -101,6 +102,7 @@ public class APILoginSuccessHandler implements AuthenticationSuccessHandler {
         // ========== 4. 응답 데이터 구성 ==========
         // 프론트엔드에서 필요한 모든 정보를 포함합니다.
         Map<String, Object> result = Map.of(
+                "id", member.getId(),
                 "accessToken", accessToken,
                 "refreshToken", refreshToken,
                 "email", member.getEmail(),

@@ -11,6 +11,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  define: {
+    // sockjs-client를 위한 global 변수 폴리필
+    global: 'globalThis',
+  },
   server: {
     port: 5173,
     proxy: {

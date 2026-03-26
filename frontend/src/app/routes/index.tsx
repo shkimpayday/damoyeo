@@ -21,6 +21,9 @@ const MyGroupsPage = lazy(
 const KakaoRedirectPage = lazy(
   () => import("@/app/routes/pages/auth/kakao-redirect-page")
 );
+const MemberProfilePage = lazy(
+  () => import("@/app/routes/pages/auth/member-profile-page")
+);
 
 // Group pages
 const GroupListPage = lazy(
@@ -38,6 +41,12 @@ const GroupManagePage = lazy(
 const GroupEditPage = lazy(
   () => import("@/app/routes/pages/groups/edit-page")
 );
+const ChatPage = lazy(
+  () => import("@/app/routes/pages/groups/chat-page")
+);
+const GalleryPage = lazy(
+  () => import("@/app/routes/pages/groups/gallery-page")
+);
 
 // Meeting pages
 const MeetingListPage = lazy(
@@ -52,10 +61,44 @@ const MeetingCreatePage = lazy(
 const MeetingEditPage = lazy(
   () => import("@/app/routes/pages/meetings/edit-page")
 );
+const MeetingChatPage = lazy(
+  () => import("@/app/routes/pages/meetings/chat-page")
+);
 
 // Event pages
 const EventDetailPage = lazy(
   () => import("@/app/routes/pages/events/detail-page")
+);
+
+// Payment pages
+const PaymentSuccessPage = lazy(
+  () => import("@/app/routes/pages/payment/success-page")
+);
+const PaymentCancelPage = lazy(
+  () => import("@/app/routes/pages/payment/cancel-page")
+);
+const PaymentFailPage = lazy(
+  () => import("@/app/routes/pages/payment/fail-page")
+);
+
+// Admin pages
+const AdminLayout = lazy(
+  () => import("@/app/routes/pages/admin/admin-layout")
+);
+const AdminDashboardPage = lazy(
+  () => import("@/app/routes/pages/admin/dashboard-page")
+);
+const AdminMembersPage = lazy(
+  () => import("@/app/routes/pages/admin/members-page")
+);
+const AdminGroupsPage = lazy(
+  () => import("@/app/routes/pages/admin/groups-page")
+);
+const AdminEventsPage = lazy(
+  () => import("@/app/routes/pages/admin/events-page")
+);
+const AdminSupportPage = lazy(
+  () => import("@/app/routes/pages/admin/support-page")
 );
 
 // Loading component
@@ -137,6 +180,14 @@ export const router = createBrowserRouter([
             path: "groups/:groupId/edit",
             element: withSuspense(GroupEditPage),
           },
+          {
+            path: "groups/:groupId/chat",
+            element: withSuspense(ChatPage),
+          },
+          {
+            path: "groups/:groupId/gallery",
+            element: withSuspense(GalleryPage),
+          },
 
           // Meetings
           {
@@ -158,6 +209,10 @@ export const router = createBrowserRouter([
                 path: ":meetingId/edit",
                 element: withSuspense(MeetingEditPage),
               },
+              {
+                path: ":meetingId/chat",
+                element: withSuspense(MeetingChatPage),
+              },
             ],
           },
 
@@ -172,6 +227,10 @@ export const router = createBrowserRouter([
               {
                 path: "my-groups",
                 element: withSuspense(MyGroupsPage),
+              },
+              {
+                path: ":memberId",
+                element: withSuspense(MemberProfilePage),
               },
             ],
           },
@@ -192,5 +251,56 @@ export const router = createBrowserRouter([
   {
     path: "member/kakao",
     element: withSuspense(KakaoRedirectPage),
+  },
+
+  // Payment callback routes (outside MobileLayout)
+  {
+    path: "payment/success",
+    element: withSuspense(PaymentSuccessPage),
+  },
+  {
+    path: "payment/cancel",
+    element: withSuspense(PaymentCancelPage),
+  },
+  {
+    path: "payment/fail",
+    element: withSuspense(PaymentFailPage),
+  },
+
+  // Admin routes (separate layout, ADMIN role required)
+  {
+    element: <ProtectedRoute requiredRoles={["ADMIN"]} />,
+    children: [
+      {
+        path: "admin",
+        element: withSuspense(AdminLayout),
+        children: [
+          {
+            index: true,
+            element: <Navigate to="dashboard" replace />,
+          },
+          {
+            path: "dashboard",
+            element: withSuspense(AdminDashboardPage),
+          },
+          {
+            path: "members",
+            element: withSuspense(AdminMembersPage),
+          },
+          {
+            path: "groups",
+            element: withSuspense(AdminGroupsPage),
+          },
+          {
+            path: "events",
+            element: withSuspense(AdminEventsPage),
+          },
+          {
+            path: "support",
+            element: withSuspense(AdminSupportPage),
+          },
+        ],
+      },
+    ],
   },
 ]);

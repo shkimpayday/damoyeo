@@ -2,6 +2,7 @@ package com.damoyeo.api.domain.group.dto;
 
 import com.damoyeo.api.domain.category.dto.CategoryDTO;
 import com.damoyeo.api.domain.member.dto.MemberSummaryDTO;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -91,7 +92,6 @@ public class GroupDTO {
      * 현재 멤버 수
      *
      * GroupMemberRepository.countApprovedMembers()로 계산됩니다.
-     * 승인된 멤버(APPROVED)만 카운트합니다.
      */
     private int memberCount;
 
@@ -100,6 +100,7 @@ public class GroupDTO {
     // ========================================================================
 
     /** 공개 여부 (true: 공개, false: 비공개) */
+    @JsonProperty("isPublic")
     private boolean isPublic;
 
     /** 모임 상태 (ACTIVE, INACTIVE, DELETED) */
@@ -132,7 +133,6 @@ public class GroupDTO {
      * 현재 사용자의 가입 상태
      *
      * - "APPROVED": 정식 멤버
-     * - "PENDING": 가입 대기 중 → "승인 대기 중" 메시지 표시
      * - null: 관계 없음
      *
      * myRole과 함께 사용하여 UI를 결정합니다.

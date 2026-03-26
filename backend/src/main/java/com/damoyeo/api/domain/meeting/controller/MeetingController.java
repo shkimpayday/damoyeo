@@ -191,7 +191,7 @@ public class MeetingController {
     // ========================================================================
 
     /**
-     * 특정 모임의 정모 목록 조회
+     * 특정 모임의 정모 목록 조회 (전체)
      *
      * [조건]
      * - 해당 모임에 속한 정모만
@@ -206,12 +206,60 @@ public class MeetingController {
      * @return 정모 목록
      */
     @GetMapping("/group/{groupId}")
-    @Operation(summary = "모임의 정모 목록")
+    @Operation(summary = "모임의 정모 목록 (전체)")
     public ResponseEntity<List<MeetingDTO>> getByGroupId(
             @PathVariable Long groupId,
             @AuthenticationPrincipal MemberDTO member) {
         String email = member != null ? member.getEmail() : null;
         return ResponseEntity.ok(meetingService.getByGroupId(groupId, email));
+    }
+
+    /**
+     * 특정 모임의 예정된 정모 목록 조회
+     *
+     * [조건]
+     * - 해당 모임에 속한 정모만
+     * - SCHEDULED, ONGOING 상태만
+     * - 정모 날짜 오름차순
+     *
+     * [프론트엔드 요청]
+     * GET /api/meetings/group/123/upcoming
+     *
+     * @param groupId 모임 ID
+     * @param member JWT 사용자 정보 (선택)
+     * @return 예정된 정모 목록
+     */
+    @GetMapping("/group/{groupId}/upcoming")
+    @Operation(summary = "모임의 예정된 정모 목록")
+    public ResponseEntity<List<MeetingDTO>> getUpcomingByGroupId(
+            @PathVariable Long groupId,
+            @AuthenticationPrincipal MemberDTO member) {
+        String email = member != null ? member.getEmail() : null;
+        return ResponseEntity.ok(meetingService.getUpcomingByGroupId(groupId, email));
+    }
+
+    /**
+     * 특정 모임의 지난 정모 목록 조회
+     *
+     * [조건]
+     * - 해당 모임에 속한 정모만
+     * - COMPLETED 상태만
+     * - 정모 날짜 내림차순 (최근 완료된 정모가 먼저)
+     *
+     * [프론트엔드 요청]
+     * GET /api/meetings/group/123/past
+     *
+     * @param groupId 모임 ID
+     * @param member JWT 사용자 정보 (선택)
+     * @return 지난 정모 목록
+     */
+    @GetMapping("/group/{groupId}/past")
+    @Operation(summary = "모임의 지난 정모 목록")
+    public ResponseEntity<List<MeetingDTO>> getPastByGroupId(
+            @PathVariable Long groupId,
+            @AuthenticationPrincipal MemberDTO member) {
+        String email = member != null ? member.getEmail() : null;
+        return ResponseEntity.ok(meetingService.getPastByGroupId(groupId, email));
     }
 
     /**

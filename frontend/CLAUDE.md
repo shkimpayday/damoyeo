@@ -134,11 +134,30 @@ frontend/
 │   │   │   ├── api/
 │   │   │   ├── stores/
 │   │   │   └── types/
-│   │   └── events/                   # 이벤트/배너 (NEW)
+│   │   ├── events/                   # 이벤트/배너
+│   │   │   ├── api/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   └── types/
+│   │   └── chat/                     # 채팅 (NEW)
 │   │       ├── api/
+│   │       │   └── chat-api.ts
 │   │       ├── components/
+│   │       │   ├── chat-room.tsx            # 메인 컨테이너
+│   │       │   ├── chat-header.tsx          # 헤더 (연결 상태)
+│   │       │   ├── message-list.tsx         # 메시지 목록
+│   │       │   ├── message-item.tsx         # 메시지 아이템
+│   │       │   ├── message-input.tsx        # 입력창 + 타이핑
+│   │       │   └── typing-indicator.tsx     # 타이핑 인디케이터
 │   │       ├── hooks/
-│   │       └── types/
+│   │       │   ├── use-websocket.ts         # WebSocket 연결 관리
+│   │       │   ├── use-chat-messages.ts     # TanStack Query
+│   │       │   └── use-chat-room.ts         # Combined Hook
+│   │       ├── stores/
+│   │       │   └── chat-store.ts            # 메시지 + 타이핑 상태
+│   │       ├── types/
+│   │       │   └── index.ts                 # ChatMessageDTO, TypingEvent
+│   │       └── index.ts
 │   │
 │   ├── mocks/                        # MSW 모킹 (NEW)
 │   │   ├── browser.ts                # MSW 브라우저 설정
@@ -472,12 +491,16 @@ jwtAxios.interceptors.response.use(
 
 | 함수 | Method | Endpoint | 설명 |
 |-----|--------|----------|------|
-| `getMeetingsByGroup` | GET | `/api/groups/{gid}/meetings` | 모임의 정모 목록 |
+| `getMeetingsByGroup` | GET | `/api/groups/{gid}/meetings` | 모임의 정모 목록 (전체) |
+| `getUpcomingMeetingsByGroup` | GET | `/api/meetings/group/{gid}/upcoming` | 모임의 예정된 정모 (날짜 기반) |
+| `getPastMeetingsByGroup` | GET | `/api/meetings/group/{gid}/past` | 모임의 지난 정모 (날짜 기반) |
 | `getMeeting` | GET | `/api/meetings/{id}` | 정모 상세 |
 | `createMeeting` | POST | `/api/groups/{gid}/meetings` | 정모 생성 |
 | `attendMeeting` | POST | `/api/meetings/{id}/attend` | 참석 등록 |
 | `cancelAttend` | DELETE | `/api/meetings/{id}/attend` | 참석 취소 |
 | `getUpcomingMeetings` | GET | `/api/meetings/upcoming` | 다가오는 정모 |
+
+> **정모 상태 관리**: 스케줄러 대신 날짜 기반 필터링 사용. 프론트엔드에서도 `meetingDate`와 현재 시간을 비교하여 상태 표시.
 
 #### 카테고리 API
 
@@ -593,8 +616,11 @@ const joinGroup = useJoinGroup();
 #### Meetings Hooks
 
 ```tsx
-// 모임의 정모 목록
-const { data: meetings } = useMeetingsByGroup(groupId);
+// 모임의 예정된 정모 목록 (날짜 기반)
+const { data: upcomingMeetings } = useUpcomingMeetingsByGroup(groupId);
+
+// 모임의 지난 정모 목록 (날짜 기반)
+const { data: pastMeetings } = usePastMeetingsByGroup(groupId);
 
 // 정모 상세
 const { data: meeting } = useMeetingDetail(meetingId);
@@ -701,7 +727,7 @@ interface Category {
 
 type GroupStatus = "ACTIVE" | "INACTIVE" | "DELETED";
 type GroupRole = "OWNER" | "MANAGER" | "MEMBER";
-type GroupMemberStatus = "PENDING" | "APPROVED" | "REJECTED" | "BANNED";
+type GroupMemberStatus = "APPROVED" | "BANNED";
 
 interface GroupDTO {
   id: number;
@@ -840,16 +866,18 @@ interface MeetingCreateRequest {
 // features/notifications/types/index.ts
 
 type NotificationType =
-  | "NEW_MEMBER"
-  | "MEMBER_LEFT"
-  | "MEMBER_APPROVED"
-  | "MEMBER_REJECTED"
-  | "NEW_MEETING"
-  | "MEETING_REMINDER"
-  | "MEETING_CANCELLED"
-  | "ROLE_CHANGED";
+  | "WELCOME"            // 회원가입 환영
+  | "NEW_MEMBER"         // 새 멤버 가입
+  | "MEMBER_LEFT"        // 멤버 탈퇴
+  | "ROLE_CHANGED"       // 역할 변경
+  | "MEMBER_KICKED"      // 강퇴됨
+  | "GROUP_DISBANDED"    // 모임 해체됨
+  | "GROUP_UPDATE"       // 모임 정보 변경
+  | "NEW_MEETING"        // 새 정모 생성
+  | "MEETING_REMINDER"   // 정모 리마인더
+  | "MEETING_CANCELLED"; // 정모 취소
 
-type NotificationRefType = "GROUP" | "MEETING" | "CHAT";
+type NotificationRefType = "GROUP" | "MEETING" | "SYSTEM";
 
 interface NotificationDTO {
   id: number;
@@ -1083,13 +1111,23 @@ npm run preview
 
 - [x] 프로필 수정 기능 (이미지 업로드, 닉네임/소개 변경)
 - [x] 위치 기반 근처 모임 검색 (Geolocation API)
-- [x] 멤버 관리 (역할 변경, 강퇴, 가입 승인/거절)
+- [x] 멤버 관리 (역할 변경, 강퇴)
 - [x] 모임/정모 수정 기능
 - [x] 무한 스크롤 (Intersection Observer)
 - [x] 이벤트/배너 시스템 (메인 배너 슬라이더, 이벤트 상세 페이지)
 - [x] MSW API 모킹 설정 (개발/테스트용)
-- [ ] 실시간 채팅 (WebSocket/STOMP)
-- [ ] 알림 시스템 완성
+- [x] 정모 상태 관리 개선 (날짜 기반 예정/지난 정모 분리)
+- [x] 알림 시스템 (강퇴/모임해체 알림 추가)
+- [x] **실시간 채팅 (WebSocket/STOMP)**
+  - [x] @stomp/stompjs, sockjs-client 의존성 추가
+  - [x] WebSocket 연결 관리 (use-websocket.ts)
+  - [x] Zustand 채팅 스토어 (메시지 + 타이핑 상태)
+  - [x] TanStack Query 메시지 히스토리 로드
+  - [x] ChatRoom 컴포넌트 (헤더, 메시지 목록, 입력창)
+  - [x] 타이핑 인디케이터 ("○○○님이 입력 중...")
+  - [x] 스마트 자동 스크롤 (내 메시지 무조건 스크롤)
+  - [x] 채팅 별도 페이지 (`/groups/:groupId/chat`)
+- [ ] 실시간 알림 (SSE/WebSocket)
 
 ### Phase 3 - 고도화
 
@@ -1106,15 +1144,19 @@ npm run preview
 - `src/features/auth/components/profile-edit-modal.tsx` - 프로필 수정 모달
 
 ### 모임 기능
-- `src/features/groups/hooks/use-group-members.ts` - 멤버 관리 hooks (역할 변경, 강퇴, 승인/거절)
+- `src/features/groups/hooks/use-group-members.ts` - 멤버 관리 hooks (역할 변경, 강퇴)
 - `src/features/groups/hooks/use-location.ts` - Geolocation 위치 hook (세션 저장)
 - `src/features/groups/components/nearby-groups-section.tsx` - 내 근처 모임 섹션
 - `src/app/routes/pages/groups/edit-page.tsx` - 모임 수정 페이지
 
 ### 정모 기능
 - `src/app/routes/pages/meetings/edit-page.tsx` - 정모 수정 페이지
+- `src/features/meetings/hooks/use-meetings.ts` - 예정/지난 정모 조회 hooks 추가
+  - `useUpcomingMeetingsByGroup(groupId)` - 예정된 정모 (날짜 기반)
+  - `usePastMeetingsByGroup(groupId)` - 지난 정모 (날짜 기반)
+- `src/app/routes/pages/meetings/detail-page.tsx` - UI 개선 (카드 기반 레이아웃)
 
-### 이벤트/배너 기능 (NEW)
+### 이벤트/배너 기능
 - `src/features/events/api/events-api.ts` - 이벤트 API 클라이언트
 - `src/features/events/hooks/use-events.ts` - 이벤트 Query hooks
 - `src/features/events/components/banner-slider.tsx` - 메인 배너 슬라이더
@@ -1122,11 +1164,35 @@ npm run preview
 - `src/features/events/types/index.ts` - 이벤트 타입 정의
 - `src/app/routes/pages/events/detail-page.tsx` - 이벤트 상세 페이지
 
-### MSW 모킹 (NEW)
+### MSW 모킹
 - `src/mocks/browser.ts` - MSW 브라우저 설정
 - `src/mocks/handlers.ts` - API 요청 핸들러
 - `src/mocks/data.ts` - 목 데이터 (DEMO_EVENT_BANNERS 등)
 
+### 채팅 기능 (NEW)
+- `src/features/chat/api/chat-api.ts` - 채팅 REST API 클라이언트
+- `src/features/chat/hooks/use-websocket.ts` - WebSocket 연결 및 STOMP 관리
+- `src/features/chat/hooks/use-chat-messages.ts` - TanStack Query 메시지 히스토리
+- `src/features/chat/hooks/use-chat-room.ts` - WebSocket + Query 통합 훅
+- `src/features/chat/stores/chat-store.ts` - 메시지 + 타이핑 상태 (Zustand)
+- `src/features/chat/components/chat-room.tsx` - 채팅방 메인 컨테이너
+- `src/features/chat/components/chat-header.tsx` - 헤더 (연결 상태)
+- `src/features/chat/components/message-list.tsx` - 메시지 목록 (스마트 스크롤)
+- `src/features/chat/components/message-item.tsx` - 메시지 아이템 (좌/우 정렬)
+- `src/features/chat/components/message-input.tsx` - 입력창 + 타이핑 이벤트
+- `src/features/chat/components/typing-indicator.tsx` - 타이핑 인디케이터
+- `src/features/chat/types/index.ts` - 채팅 타입 정의
+- `src/app/routes/pages/groups/chat-page.tsx` - 채팅 전용 페이지
+
+**주요 기능:**
+- WebSocket/STOMP 실시간 메시지 송수신
+- JWT 인증 통합 (CONNECT 프레임)
+- 메시지 히스토리 로드 (TanStack Query)
+- 읽음 상태 추적 (unread count)
+- 타이핑 인디케이터 (3초 디바운싱)
+- 스마트 자동 스크롤 (내 메시지 무조건 스크롤, 다른 사람 메시지 조건부)
+- 채팅 별도 페이지 (`/groups/:groupId/chat`)
+
 ---
 
-> 마지막 업데이트: 2026-01-25
+> 마지막 업데이트: 2025-02-25

@@ -9,18 +9,25 @@ import com.damoyeo.api.domain.group.repository.GroupMemberRepository;
 import com.damoyeo.api.domain.group.repository.GroupRepository;
 import com.damoyeo.api.domain.member.dto.MemberSummaryDTO;
 import com.damoyeo.api.domain.member.entity.Member;
+import com.damoyeo.api.domain.member.entity.MemberRole;
 import com.damoyeo.api.domain.member.repository.MemberRepository;
+import com.damoyeo.api.domain.notification.entity.NotificationType;
+import com.damoyeo.api.domain.notification.repository.NotificationRepository;
+import com.damoyeo.api.domain.notification.service.NotificationService;
 import com.damoyeo.api.global.common.dto.PageRequestDTO;
 import com.damoyeo.api.global.common.dto.PageResponseDTO;
 import com.damoyeo.api.global.exception.CustomException;
+import com.damoyeo.api.global.util.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -57,6 +64,18 @@ public class GroupServiceImpl implements GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
+    private final FileUploadUtil fileUploadUtil;
+    private final NotificationService notificationService;
+
+    // ========================================================================
+    // 프리미엄 회원 제한 상수
+    // ========================================================================
+
+    /** 일반 회원 모임 생성 제한 (2개) */
+    private static final int NORMAL_GROUP_LIMIT = 2;
+
+    /** 일반 회원 모임 인원 제한 (30명) */
+    private static final int NORMAL_MEMBER_LIMIT = 30;
 
     // ========================================================================
     // CRUD 기본 기능
@@ -78,14 +97,40 @@ public class GroupServiceImpl implements GroupService {
      */
     @Override
     public GroupDTO create(String email, GroupCreateRequest request) {
-        // 1. 모임장이 될 회원 조회
-        Member owner = getMemberByEmail(email);
+        // 1. 모임장이 될 회원 조회 (권한 정보 포함)
+        Member owner = memberRepository.getWithRoles(email)
+                .orElseThrow(() -> CustomException.notFound("회원을 찾을 수 없습니다."));
 
-        // 2. 카테고리 확인
+        // 2. 프리미엄 회원 여부 확인
+        boolean isPremium = owner.getMemberRoleList().contains(MemberRole.PREMIUM);
+
+        // 3. 일반 회원 모임 생성 제한 확인 (2개)
+        if (!isPremium) {
+            int ownedGroupCount = groupRepository.countOwnedGroups(owner.getId());
+            if (ownedGroupCount >= NORMAL_GROUP_LIMIT) {
+                throw new CustomException(
+                        "일반 회원은 최대 " + NORMAL_GROUP_LIMIT + "개의 모임만 생성할 수 있습니다. " +
+                                "프리미엄 회원으로 업그레이드하면 무제한으로 모임을 생성할 수 있습니다.",
+                        HttpStatus.FORBIDDEN
+                );
+            }
+        }
+
+        // 4. 일반 회원 모임 인원 제한 확인 (30명)
+        int maxMembers = request.getMaxMembers();
+        if (!isPremium && maxMembers > NORMAL_MEMBER_LIMIT) {
+            throw new CustomException(
+                    "일반 회원은 최대 " + NORMAL_MEMBER_LIMIT + "명까지만 모임 인원을 설정할 수 있습니다. " +
+                            "프리미엄 회원으로 업그레이드하면 인원 제한 없이 모임을 운영할 수 있습니다.",
+                    HttpStatus.FORBIDDEN
+            );
+        }
+
+        // 5. 카테고리 확인
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> CustomException.notFound("카테고리를 찾을 수 없습니다."));
 
-        // 3. 모임 엔티티 생성
+        // 6. 모임 엔티티 생성
         Group group = Group.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -94,7 +139,7 @@ public class GroupServiceImpl implements GroupService {
                 .location(request.getLocation())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
-                .maxMembers(request.getMaxMembers())
+                .maxMembers(maxMembers)
                 .isPublic(request.isPublic())
                 .owner(owner)
                 .build();
@@ -158,13 +203,35 @@ public class GroupServiceImpl implements GroupService {
         if (request.getDescription() != null) {
             group.changeDescription(request.getDescription());
         }
-        if (request.getCoverImage() != null) {
+        if(request.getIsPublic() != null) {
+            group.changeIsPublic(request.getIsPublic());
+        }
+        // 커버 이미지 파일 업로드 처리
+        if (request.getCoverImageFile() != null && !request.getCoverImageFile().isEmpty()) {
+            String imageUrl = fileUploadUtil.uploadGroupImage(request.getCoverImageFile());
+            group.changeCoverImage(imageUrl);
+        } else if (request.getCoverImage() != null) {
             group.changeCoverImage(request.getCoverImage());
         }
         if (request.getLocation() != null) {
-            group.changeLocation(request.getLocation(), request.getLatitude(), request.getLongitude());
+            // lat/lng가 null이면 기존 값 유지
+            Double lat = request.getLatitude() != null ? request.getLatitude() : group.getLatitude();
+            Double lng = request.getLongitude() != null ? request.getLongitude() : group.getLongitude();
+            group.changeLocation(request.getLocation(), lat, lng);
         }
         if (request.getMaxMembers() != null) {
+            // 일반 회원 모임 인원 제한 확인 (30명)
+            Member owner = memberRepository.getWithRoles(group.getOwner().getEmail())
+                    .orElseThrow(() -> CustomException.notFound("모임장 정보를 찾을 수 없습니다."));
+            boolean isPremium = owner.getMemberRoleList().contains(MemberRole.PREMIUM);
+
+            if (!isPremium && request.getMaxMembers() > NORMAL_MEMBER_LIMIT) {
+                throw new CustomException(
+                        "일반 회원은 최대 " + NORMAL_MEMBER_LIMIT + "명까지만 모임 인원을 설정할 수 있습니다. " +
+                                "프리미엄 회원으로 업그레이드하면 인원 제한 없이 모임을 운영할 수 있습니다.",
+                        HttpStatus.FORBIDDEN
+                );
+            }
             group.changeMaxMembers(request.getMaxMembers());
         }
         if (request.getCategoryId() != null) {
@@ -199,6 +266,23 @@ public class GroupServiceImpl implements GroupService {
         // 권한 검사: 모임장만 삭제 가능
         checkOwner(group, email);
 
+        // 모임 해체 전에 모든 멤버에게 알림 발송 (모임장 제외)
+        List<GroupMember> members = groupMemberRepository.findByGroupIdAndStatus(id, JoinStatus.APPROVED);
+        String groupName = group.getName();
+
+        for (GroupMember gm : members) {
+            // 모임장은 알림 제외 (본인이 해체한 것이므로)
+            if (gm.getRole() != GroupRole.OWNER) {
+                notificationService.send(
+                        gm.getMember(),
+                        NotificationType.GROUP_DISBANDED,
+                        "모임이 해체되었습니다",
+                        "'" + groupName + "'이(가) 해체되었습니다.",
+                        id
+                );
+            }
+        }
+
         // 소프트 삭제: 상태만 변경
         group.changeStatus(GroupStatus.DELETED);
         log.info("Group deleted: {} by {}", group.getName(), email);
@@ -209,23 +293,54 @@ public class GroupServiceImpl implements GroupService {
     // ========================================================================
 
     /**
-     * 모임 목록 조회 (페이지네이션)
+     * 모임 목록 조회 (페이지네이션 + 검색 + 정렬)
      *
      * [조건]
      * - categoryId가 있으면 해당 카테고리만 필터링
-     * - categoryId가 없으면 전체 ACTIVE 모임 조회
+     * - keyword가 있으면 모임 이름 검색
+     * - sort: latest(최신순), popular(인기순)
+     *
+     * [정렬 기준]
+     * - latest: 생성일 기준 내림차순 (기본값)
+     * - popular: 멤버 수 기준 내림차순
      */
     @Override
     @Transactional(readOnly = true)
-    public PageResponseDTO<GroupDTO> getList(PageRequestDTO pageRequestDTO, Long categoryId) {
+    public PageResponseDTO<GroupDTO> getList(PageRequestDTO pageRequestDTO, Long categoryId, String keyword, String sort) {
         Page<Group> result;
+        boolean isPopular = "popular".equalsIgnoreCase(sort);
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+        boolean hasCategory = categoryId != null;
 
-        if (categoryId != null) {
-            // 특정 카테고리의 모임만 조회
-            result = groupRepository.findByCategoryId(categoryId, pageRequestDTO.getPageable("id"));
+        if (isPopular) {
+            // 인기순 정렬 (멤버 수 기준) - Native Query가 SQL 내부에서 ORDER BY 처리
+            // getUnsortedPageable()을 사용하지 않으면 Spring이 Pageable의 Sort를
+            // SQL에 추가하려 해서 native query와 충돌하여 500 오류 발생
+            Pageable unsortedPageable = pageRequestDTO.getUnsortedPageable();
+            if (hasKeyword && hasCategory) {
+                result = groupRepository.searchByKeywordAndCategoryOrderByMemberCount(
+                        keyword.trim(), categoryId, unsortedPageable);
+            } else if (hasKeyword) {
+                result = groupRepository.searchByKeywordOrderByMemberCount(
+                        keyword.trim(), unsortedPageable);
+            } else if (hasCategory) {
+                result = groupRepository.findByCategoryIdOrderByMemberCount(
+                        categoryId, unsortedPageable);
+            } else {
+                result = groupRepository.findAllOrderByMemberCount(unsortedPageable);
+            }
         } else {
-            // 전체 활성 모임 조회
-            result = groupRepository.findAllByStatus(GroupStatus.ACTIVE, pageRequestDTO.getPageable("id"));
+            // 최신순 정렬 (기본값): id 기준 내림차순
+            if (hasKeyword && hasCategory) {
+                result = groupRepository.searchByKeywordAndCategory(
+                        keyword.trim(), categoryId, pageRequestDTO.getPageable("id"));
+            } else if (hasKeyword) {
+                result = groupRepository.searchByKeyword(keyword.trim(), pageRequestDTO.getPageable("id"));
+            } else if (hasCategory) {
+                result = groupRepository.findByCategoryId(categoryId, pageRequestDTO.getPageable("id"));
+            } else {
+                result = groupRepository.findAllByStatus(GroupStatus.ACTIVE, pageRequestDTO.getPageable("id"));
+            }
         }
 
         // Entity → DTO 변환
@@ -234,7 +349,7 @@ public class GroupServiceImpl implements GroupService {
                 .collect(Collectors.toList());
 
         // PageResponseDTO 생성 (Builder 패턴)
-        return PageResponseDTO.<GroupDTO>withAll()
+        return PageResponseDTO.<GroupDTO>builder()
                 .pageRequestDTO(pageRequestDTO)
                 .dtoList(dtoList)
                 .totalCount((int) result.getTotalElements())
@@ -256,7 +371,7 @@ public class GroupServiceImpl implements GroupService {
                 .map(g -> entityToDTO(g, null))
                 .collect(Collectors.toList());
 
-        return PageResponseDTO.<GroupDTO>withAll()
+        return PageResponseDTO.<GroupDTO>builder()
                 .pageRequestDTO(pageRequestDTO)
                 .dtoList(dtoList)
                 .totalCount((int) result.getTotalElements())
@@ -267,8 +382,7 @@ public class GroupServiceImpl implements GroupService {
      * 내가 가입한 모임 목록 조회
      *
      * [조건]
-     * 승인된 멤버(APPROVED)로 가입한 모임만 조회합니다.
-     * 가입 대기 중(PENDING)인 모임은 제외됩니다.
+     * 가입된 멤버(APPROVED)인 모임만 조회합니다.
      */
     @Override
     @Transactional(readOnly = true)
@@ -316,15 +430,13 @@ public class GroupServiceImpl implements GroupService {
     // ========================================================================
 
     /**
-     * 모임 가입 신청
+     * 모임 가입
      *
      * [처리 흐름]
      * 1. 모임과 회원 존재 확인
-     * 2. 중복 가입 확인 (이미 신청했거나 멤버인 경우)
+     * 2. 중복 가입 확인 (이미 멤버인 경우)
      * 3. 정원 확인 (가득 찼으면 에러)
-     * 4. GroupMember 생성
-     *    - 공개 모임(isPublic=true): 즉시 APPROVED
-     *    - 비공개 모임: PENDING (모임장 승인 필요)
+     * 4. GroupMember 생성 (즉시 APPROVED)
      */
     @Override
     public void join(Long groupId, String email) {
@@ -334,7 +446,7 @@ public class GroupServiceImpl implements GroupService {
 
         // 1. 중복 가입 확인
         if (groupMemberRepository.existsByGroupIdAndMemberId(groupId, member.getId())) {
-            throw new CustomException("이미 가입 신청했거나 멤버입니다.", HttpStatus.BAD_REQUEST);
+            throw new CustomException("이미 멤버입니다.", HttpStatus.BAD_REQUEST);
         }
 
         // 2. 정원 확인
@@ -343,17 +455,26 @@ public class GroupServiceImpl implements GroupService {
             throw new CustomException("모임 정원이 가득 찼습니다.", HttpStatus.BAD_REQUEST);
         }
 
-        // 3. GroupMember 생성
+        // 3. GroupMember 생성 (즉시 가입)
         GroupMember groupMember = GroupMember.builder()
                 .group(group)
                 .member(member)
                 .role(GroupRole.MEMBER)  // 기본 역할: 일반 멤버
-                // 공개 모임은 즉시 승인, 비공개는 대기
-                .status(group.isPublic() ? JoinStatus.APPROVED : JoinStatus.PENDING)
+                .status(JoinStatus.APPROVED)  // 즉시 승인
                 .build();
 
         groupMemberRepository.save(groupMember);
         log.info("Member {} joined group {}", email, group.getName());
+
+        notificationService.send(
+                group.getOwner(),
+                NotificationType.NEW_MEMBER,
+                "새 맴버 가입",
+                member.getNickname() + "님이 '" + group.getName() + "'에 가입했습니다.",  // 내용
+                groupId
+        );
+
+
     }
 
     /**
@@ -367,6 +488,9 @@ public class GroupServiceImpl implements GroupService {
     public void leave(Long groupId, String email) {
         Member member = getMemberByEmail(email);
 
+        Group group = groupRepository.findByIdWithDetails(groupId)
+                .orElseThrow(() -> CustomException.notFound("모임을 찾을 수 없습니다."));
+
         GroupMember groupMember = groupMemberRepository.findByGroupIdAndMemberId(groupId, member.getId())
                 .orElseThrow(() -> CustomException.notFound("가입 정보를 찾을 수 없습니다."));
 
@@ -378,52 +502,15 @@ public class GroupServiceImpl implements GroupService {
         // DB에서 삭제
         groupMemberRepository.delete(groupMember);
         log.info("Member {} left group {}", email, groupId);
-    }
 
-    /**
-     * 가입 승인
-     *
-     * [권한] 모임장 또는 운영진
-     * [동작] PENDING → APPROVED
-     */
-    @Override
-    public void approveMember(Long groupId, Long memberId, String ownerEmail) {
-        Group group = groupRepository.findByIdWithDetails(groupId)
-                .orElseThrow(() -> CustomException.notFound("모임을 찾을 수 없습니다."));
+        notificationService.send(
+            group.getOwner(),
+            NotificationType.MEMBER_LEFT,
+            "맴버가 탈퇴하였습니다.",
+            member.getNickname() + "님이 '" + group.getName() + "'에서 탈퇴했습니다.",
+            groupId
+        );
 
-        // 권한 검사
-        checkOwnerOrManager(group, ownerEmail);
-
-        GroupMember groupMember = groupMemberRepository.findByGroupIdAndMemberId(groupId, memberId)
-                .orElseThrow(() -> CustomException.notFound("가입 신청을 찾을 수 없습니다."));
-
-        // PENDING 상태만 승인 가능
-        if (groupMember.getStatus() != JoinStatus.PENDING) {
-            throw new CustomException("대기 중인 신청만 승인할 수 있습니다.", HttpStatus.BAD_REQUEST);
-        }
-
-        groupMember.approve();  // PENDING → APPROVED
-        log.info("Member {} approved for group {}", memberId, groupId);
-    }
-
-    /**
-     * 가입 거절
-     *
-     * [권한] 모임장 또는 운영진
-     * [동작] PENDING → REJECTED
-     */
-    @Override
-    public void rejectMember(Long groupId, Long memberId, String ownerEmail) {
-        Group group = groupRepository.findByIdWithDetails(groupId)
-                .orElseThrow(() -> CustomException.notFound("모임을 찾을 수 없습니다."));
-
-        checkOwnerOrManager(group, ownerEmail);
-
-        GroupMember groupMember = groupMemberRepository.findByGroupIdAndMemberId(groupId, memberId)
-                .orElseThrow(() -> CustomException.notFound("가입 신청을 찾을 수 없습니다."));
-
-        groupMember.reject();  // PENDING → REJECTED
-        log.info("Member {} rejected for group {}", memberId, groupId);
     }
 
     /**
@@ -447,8 +534,20 @@ public class GroupServiceImpl implements GroupService {
             throw new CustomException("모임장은 강퇴할 수 없습니다.", HttpStatus.BAD_REQUEST);
         }
 
+        // 강퇴될 멤버 정보 저장 (삭제 전에 참조)
+        Member kickedMember = groupMember.getMember();
+
         groupMemberRepository.delete(groupMember);
         log.info("Member {} kicked from group {}", memberId, groupId);
+
+        // 강퇴된 멤버에게 알림 발송
+        notificationService.send(
+                kickedMember,
+                NotificationType.MEMBER_KICKED,
+                "모임에서 탈퇴 처리되었습니다",
+                "'" + group.getName() + "'에서 탈퇴 처리되었습니다.",
+                groupId
+        );
     }
 
     /**
@@ -470,8 +569,18 @@ public class GroupServiceImpl implements GroupService {
 
         // 문자열 → Enum 변환
         GroupRole newRole = GroupRole.valueOf(role);
+
+        notificationService.send(
+                groupMember.getMember(),
+                NotificationType.ROLE_CHANGED,
+                "권한이 변경되었습니다.",
+                "'"+group.getName() + "'모임에서 권한이 "+groupMember.getRole()+"에서 "+newRole+"로 변경되었습니다.",
+                groupId
+        );
+
         groupMember.changeRole(newRole);
         log.info("Member {} role changed to {} in group {}", memberId, role, groupId);
+
     }
 
     /**
@@ -484,24 +593,6 @@ public class GroupServiceImpl implements GroupService {
     public List<GroupMemberDTO> getMembers(Long groupId, String status) {
         JoinStatus joinStatus = status != null ? JoinStatus.valueOf(status) : JoinStatus.APPROVED;
         return groupMemberRepository.findByGroupIdAndStatus(groupId, joinStatus).stream()
-                .map(this::memberToDTO)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 가입 대기 목록 조회
-     *
-     * [권한] 모임장 또는 운영진
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<GroupMemberDTO> getPendingMembers(Long groupId, String ownerEmail) {
-        Group group = groupRepository.findByIdWithDetails(groupId)
-                .orElseThrow(() -> CustomException.notFound("모임을 찾을 수 없습니다."));
-
-        checkOwnerOrManager(group, ownerEmail);
-
-        return groupMemberRepository.findByGroupIdAndStatus(groupId, JoinStatus.PENDING).stream()
                 .map(this::memberToDTO)
                 .collect(Collectors.toList());
     }
@@ -615,7 +706,7 @@ public class GroupServiceImpl implements GroupService {
                 groupMemberRepository.findByGroupIdAndMemberId(group.getId(), member.getId())
                         .ifPresent(gm -> {
                             builder.myRole(gm.getRole().name());    // OWNER, MANAGER, MEMBER
-                            builder.myStatus(gm.getStatus().name()); // PENDING, APPROVED
+                            builder.myStatus(gm.getStatus().name()); // APPROVED, BANNED
                         });
             }
         }
@@ -633,7 +724,6 @@ public class GroupServiceImpl implements GroupService {
                 .id(gm.getId())
                 .member(MemberSummaryDTO.from(gm.getMember()))
                 .role(gm.getRole().name())
-                .status(gm.getStatus().name())
                 .joinedAt(gm.getCreatedAt())  // BaseEntity의 createdAt
                 .build();
     }

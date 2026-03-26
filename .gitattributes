@@ -1,2 +1,33 @@
-# Auto detect text files and perform LF normalization
+# ============================================================
+# Git Line Ending 설정
+# Windows에서 checkout 시 CRLF 변환 방지
+# Docker 빌드 시 "bad interpreter" 오류 예방
+# ============================================================
+
+# 기본: 텍스트 파일 자동 감지
 * text=auto
+
+# ── 항상 LF 유지 (절대 CRLF 변환 안 됨) ─────────────────
+# Shell 스크립트 - CRLF이면 Linux에서 실행 불가
+*.sh        text eol=lf
+gradlew     text eol=lf
+
+# Docker 관련
+Dockerfile  text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# Nginx 설정
+*.conf      text eol=lf
+
+# 환경변수 파일
+.env*       text eol=lf
+
+# ── 바이너리 파일 (변환 안 됨) ───────────────────────────
+*.jar       binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.zip       binary

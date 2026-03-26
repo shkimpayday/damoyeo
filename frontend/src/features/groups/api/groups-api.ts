@@ -20,7 +20,6 @@ export const getGroups = async (
   params: GroupSearchParams
 ): Promise<PageResponseDTO<GroupListDTO>> => {
   const res = await jwtAxios.get(prefix, { params });
-  console.log("getGroups >>", res)
   return res.data;
 };
 
@@ -29,7 +28,6 @@ export const getGroups = async (
  */
 export const getGroup = async (groupId: number): Promise<GroupDTO> => {
   const res = await jwtAxios.get(`${prefix}/${groupId}`);
-  console.log("getGroup >>", res)
   return res.data;
 };
 
@@ -43,12 +41,12 @@ export const createGroup = async (
   formData.append("name", request.name);
   formData.append("description", request.description);
   formData.append("categoryId", String(request.categoryId));
-  formData.append("address", request.address);
+  formData.append("location", request.address);
   formData.append("maxMembers", String(request.maxMembers));
   formData.append("isPublic", String(request.isPublic));
 
-  if (request.lat) formData.append("lat", String(request.lat));
-  if (request.lng) formData.append("lng", String(request.lng));
+  if (request.lat != null) formData.append("latitude", String(request.lat));
+  if (request.lng != null) formData.append("longitude", String(request.lng));
   if (request.coverImage) formData.append("coverImage", request.coverImage);
 
   const res = await jwtAxios.post(prefix, formData, {
@@ -67,18 +65,18 @@ export const updateGroup = async (
   const formData = new FormData();
 
   if (request.name) formData.append("name", request.name);
-  if (request.description)
+  if (request.description !== undefined)
     formData.append("description", request.description);
   if (request.categoryId)
     formData.append("categoryId", String(request.categoryId));
-  if (request.address) formData.append("address", request.address);
+  if (request.address) formData.append("location", request.address);
   if (request.maxMembers)
     formData.append("maxMembers", String(request.maxMembers));
   if (request.isPublic !== undefined)
     formData.append("isPublic", String(request.isPublic));
-  if (request.lat) formData.append("lat", String(request.lat));
-  if (request.lng) formData.append("lng", String(request.lng));
-  if (request.coverImage) formData.append("coverImage", request.coverImage);
+  if (request.lat != null) formData.append("latitude", String(request.lat));
+  if (request.lng != null) formData.append("longitude", String(request.lng));
+  if (request.coverImage) formData.append("coverImageFile", request.coverImage);
 
   const res = await jwtAxios.put(`${prefix}/${groupId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
@@ -97,7 +95,7 @@ export const deleteGroup = async (
 };
 
 /**
- * 모임 가입 신청
+ * 모임 가입 (즉시 가입)
  */
 export const joinGroup = async (
   groupId: number

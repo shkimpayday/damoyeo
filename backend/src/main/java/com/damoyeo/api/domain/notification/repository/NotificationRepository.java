@@ -71,7 +71,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * [프론트엔드 API]
      * GET /api/notifications?page=1&size=10
      */
-    Page<Notification> findByMemberIdOrderByCreatedAtDesc(Long memberId, Pageable pageable);
+    Page<Notification> findByMemberIdAndIsDeletedFalseOrderByCreatedAtDesc(Long memberId, Pageable pageable);
 
     /**
      * 읽지 않은 알림 개수 조회
@@ -105,7 +105,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * │  🔔⑤    │  ← 읽지 않은 알림 5개
      * └──────────┘
      */
-    @Query("select count(n) from Notification n where n.member.id = :memberId and n.isRead = false")
+    @Query("select count(n) from Notification n where n.member.id = :memberId and n.isRead = false and n.isDeleted = true")
     int countUnread(@Param("memberId") Long memberId);
 
     /**
@@ -149,4 +149,20 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("update Notification n set n.isRead = true where n.member.id = :memberId")
     void markAllAsRead(@Param("memberId") Long memberId);
+
+    /**
+     * 특정 회원에게 특정 정모에 대한 특정 타입의 알림이 존재하는지 확인
+     *
+     * [용도]
+     * 리마인더 알림 중복 생성 방지.
+     * 이미 해당 정모에 대한 리마인더 알림이 있으면 다시 생성하지 않음.
+     *
+     * @param memberId 회원 ID
+     * @param type 알림 타입 (MEETING_REMINDER, MEETING_IMMINENT 등)
+     * @param relatedId 관련 정모 ID
+     * @return 존재 여부
+     */
+    boolean existsByMemberIdAndTypeAndRelatedId(Long memberId,
+                                                 com.damoyeo.api.domain.notification.entity.NotificationType type,
+                                                 Long relatedId);
 }

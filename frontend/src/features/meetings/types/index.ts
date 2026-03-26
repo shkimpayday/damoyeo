@@ -22,6 +22,8 @@ export interface MeetingDTO {
   fee: number;
   status: MeetingStatus;
   myStatus?: AttendStatus | null;
+  /** 현재 사용자의 정모 수정/취소 권한 여부 (생성자 또는 OWNER/MANAGER) */
+  canEdit?: boolean;
   createdBy: MemberSummary;
   createdAt: string;
 }
@@ -41,6 +43,7 @@ export interface MeetingListDTO {
 
 // 정모 생성 요청
 export interface MeetingCreateRequest {
+  groupId: number;
   title: string;
   description: string;
   address: string;

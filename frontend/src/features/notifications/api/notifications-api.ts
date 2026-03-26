@@ -27,7 +27,7 @@ export const getUnreadCount = async (): Promise<number> => {
  */
 export const markAsRead = async (
   notificationId: number
-): Promise<{ message: string }> => {
+): Promise<void> => {
   const res = await jwtAxios.patch(`${prefix}/${notificationId}/read`);
   return res.data;
 };
@@ -35,7 +35,17 @@ export const markAsRead = async (
 /**
  * 전체 알림 읽음 처리
  */
-export const markAllAsRead = async (): Promise<{ message: string }> => {
+export const markAllAsRead = async (): Promise<void> => {
   const res = await jwtAxios.patch(`${prefix}/read-all`);
   return res.data;
 };
+
+/**
+ * 알림 삭제(안보이기)
+ */
+export const removeNotificationApi = async (
+  notificationId: number
+): Promise<void> => {
+  const res = await jwtAxios.patch(`${prefix}/${notificationId}/delete`);
+  return res.data;
+}

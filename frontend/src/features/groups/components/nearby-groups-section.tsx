@@ -1,11 +1,26 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { useNearbyGroups, useCurrentLocation } from "../hooks";
+import { useUpdateLocation } from "@/features/auth/hooks";
+import { useAuthStore } from "@/features/auth/stores";
 import { GroupCard } from "./group-card";
 import { Spinner } from "@/components/ui";
 
 export function NearbyGroupsSection() {
   const { lat, lng, loading: locationLoading, error, requestLocation, hasLocation } = useCurrentLocation();
+  const { member } = useAuthStore();
+  const updateLocation = useUpdateLocation();
+  const locationSaved = useRef(false);
+
+  // 위치 획득 성공 시 서버 프로필에도 저장
+  useEffect(() => {
+    if (lat && lng && member && !locationSaved.current) {
+      locationSaved.current = true;
+      updateLocation.mutate({ lat, lng, address: "" });
+    }
+  }, [lat, lng, member]);
+
   const { data: nearbyGroups, isLoading: groupsLoading } = useNearbyGroups(
     lat ?? 0,
     lng ?? 0,
@@ -15,7 +30,7 @@ export function NearbyGroupsSection() {
   // 위치 권한 요청 전
   if (!hasLocation && !locationLoading && !error) {
     return (
-      <div className="app-content">
+      <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">내 근처 모임</h2>
         <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
           <span className="text-5xl">📍</span>
@@ -36,13 +51,11 @@ export function NearbyGroupsSection() {
   // 위치 로딩 중
   if (locationLoading) {
     return (
-      <div className="app-content">
+      <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">내 근처 모임</h2>
-        <div className="flex items-center justify-center h-40">
-          <div className="text-center">
-            <Spinner size="lg" />
-            <p className="mt-3 text-sm text-gray-500">위치를 확인하고 있어요...</p>
-          </div>
+        <div className="flex flex-col items-center justify-center h-40">
+          <Spinner size="lg" />
+          <p className="mt-3 text-sm text-gray-500">위치를 확인하고 있어요...</p>
         </div>
       </div>
     );
@@ -51,7 +64,7 @@ export function NearbyGroupsSection() {
   // 위치 오류
   if (error) {
     return (
-      <div className="app-content">
+      <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">내 근처 모임</h2>
         <div className="bg-red-50 rounded-2xl p-6 text-center">
           <span className="text-3xl">⚠️</span>
@@ -70,7 +83,7 @@ export function NearbyGroupsSection() {
   // 모임 로딩 중
   if (groupsLoading) {
     return (
-      <div className="app-content">
+      <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">내 근처 모임</h2>
         <div className="flex items-center justify-center h-40">
           <Spinner size="lg" />
@@ -82,7 +95,7 @@ export function NearbyGroupsSection() {
   // 근처 모임이 없음
   if (!nearbyGroups || nearbyGroups.length === 0) {
     return (
-      <div className="app-content">
+      <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">내 근처 모임</h2>
         <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
           <span className="text-5xl">🔍</span>
@@ -102,7 +115,7 @@ export function NearbyGroupsSection() {
 
   // 근처 모임 표시
   return (
-    <div className="app-content">
+    <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">내 근처 모임</h2>
         <Link

@@ -152,7 +152,7 @@ public class Group extends BaseEntity {
      *
      * 모임을 생성한 사람이며, 모든 권한을 가집니다.
      * - 모임 정보 수정
-     * - 멤버 승인/거절/강퇴
+     * - 멤버 관리 (강퇴, 역할 변경)
      * - 운영진 지정
      * - 모임 삭제
      *
@@ -216,6 +216,11 @@ public class Group extends BaseEntity {
     /** 카테고리 변경 */
     public void changeCategory(Category category) {
         this.category = category;
+    }
+
+    /** 공개여부 변경 */
+    public void changeIsPublic(Boolean isPublic) {
+        this.isPublic = isPublic;
     }
 
     /** 모임 상태 변경 (ACTIVE, INACTIVE, DELETED) */

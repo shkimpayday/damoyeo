@@ -1,10 +1,19 @@
-import { Outlet } from "react-router";
+import { useEffect } from "react";
+import { Outlet, useLocation } from "react-router";
 import { Header } from "./header";
 import { Footer } from "./footer";
 import { TopPromoBanner } from "@/features/events";
 import { useAuthStore } from "@/features/auth/stores";
+import { SessionExpiredModal } from "@/features/auth/components/session-expired-modal";
+import { SupportFloatingButton } from "@/features/support/components/support-floating-button";
 
 export function MobileLayout() {
+  const { pathname } = useLocation();
+
+  // 페이지 이동 시 스크롤 최상단으로 이동
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   const member = useAuthStore((state) => state.member);
   const isLoggedIn = !!member.email;
 
@@ -26,10 +35,19 @@ export function MobileLayout() {
       <Header />
 
       {/* 메인 콘텐츠 영역 */}
-      <main className="app-main bg-white">
+      <main className="app-main bg-white app-content">
         <Outlet />
-        <Footer />
+        
       </main>
+
+      {/* 푸터 - 전체 너비*/}
+      <Footer />
+
+      {/* 상담 플로팅 버튼 */}
+      <SupportFloatingButton />
+
+      {/* 세션 만료 모달 */}
+      <SessionExpiredModal />
     </div>
   );
 }

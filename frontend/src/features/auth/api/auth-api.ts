@@ -4,6 +4,7 @@ import { ENV } from "@/config";
 import type {
   MemberInfo,
   ProfileInfo,
+  PublicProfile,
   SignupRequest,
   ProfileUpdateRequest,
   LocationUpdateRequest,
@@ -79,6 +80,17 @@ export const updateLocation = async (
   request: LocationUpdateRequest
 ): Promise<{ message: string }> => {
   const res = await jwtAxios.put(`${prefix}/location`, request);
+  return res.data;
+};
+
+/**
+ * 공개 프로필 조회
+ *
+ * 다른 회원의 공개 프로필을 조회합니다.
+ * 이메일, 비밀번호 등 민감한 정보는 포함되지 않습니다.
+ */
+export const getPublicProfile = async (memberId: number): Promise<PublicProfile> => {
+  const res = await jwtAxios.get(`${prefix}/${memberId}/profile`);
   return res.data;
 };
 

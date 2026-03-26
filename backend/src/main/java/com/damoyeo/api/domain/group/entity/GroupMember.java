@@ -12,7 +12,7 @@ import lombok.*;
  *
  * [역할]
  * 모임(Group)과 회원(Member) 간의 다대다(N:M) 관계를 관리합니다.
- * 단순한 관계뿐 아니라 추가 정보(역할, 가입 상태)도 포함합니다.
+ * 단순한 관계뿐 아니라 추가 정보(역할, 가입일)도 포함합니다.
  *
  * [관계 다이어그램]
  * Group (1) ──── (N) GroupMember (N) ──── (1) Member
@@ -21,14 +21,13 @@ import lombok.*;
  * JPA의 @ManyToMany를 사용하면 단순한 관계만 표현할 수 있습니다.
  * 하지만 우리는 추가 정보가 필요합니다:
  * - role: 이 회원이 모임에서 어떤 역할인가? (모임장/운영진/멤버)
- * - status: 가입 신청 상태는? (대기중/승인됨/거절됨)
+ * - status: 가입 상태 (APPROVED, BANNED)
  * - createdAt: 언제 가입했는가?
  *
  * 따라서 중간 테이블을 별도 엔티티로 승격시켜 관리합니다.
  *
  * [사용 위치]
- * - GroupService.join(): 가입 신청 시 PENDING 상태로 생성
- * - GroupService.approve(): 가입 승인 시 APPROVED로 변경
+ * - GroupService.join(): 가입 시 즉시 APPROVED 상태로 생성
  * - GroupController.getMembers(): 멤버 목록 조회
  *
  * [DB 테이블]
@@ -88,49 +87,19 @@ public class GroupMember extends BaseEntity {
     /**
      * 가입 상태
      *
-     * - PENDING: 가입 신청 중 (승인 대기)
-     * - APPROVED: 승인됨 (정식 멤버)
-     * - REJECTED: 거절됨
+     * - APPROVED: 가입 완료 (정식 멤버)
+     * - BANNED: 강퇴됨
      *
-     * 기본값: PENDING (가입 신청 시 대기 상태로 시작)
-     *
-     * [가입 흐름]
-     * 1. 사용자가 가입 신청 → PENDING 상태로 GroupMember 생성
-     * 2. 모임장/운영진이 승인 → APPROVED로 변경
-     * 3. 또는 거절 → REJECTED로 변경
+     * 기본값: APPROVED (가입 시 즉시 승인)
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private JoinStatus status = JoinStatus.PENDING;
+    private JoinStatus status = JoinStatus.APPROVED;
 
     // ========================================================================
     // 상태 변경 메서드
     // ========================================================================
-
-    /**
-     * 가입 승인
-     *
-     * 모임장/운영진이 가입 신청을 승인할 때 호출합니다.
-     * PENDING → APPROVED
-     *
-     * 호출 위치: GroupServiceImpl.approveMember()
-     */
-    public void approve() {
-        this.status = JoinStatus.APPROVED;
-    }
-
-    /**
-     * 가입 거절
-     *
-     * 모임장/운영진이 가입 신청을 거절할 때 호출합니다.
-     * PENDING → REJECTED
-     *
-     * 호출 위치: GroupServiceImpl.rejectMember()
-     */
-    public void reject() {
-        this.status = JoinStatus.REJECTED;
-    }
 
     /**
      * 역할 변경
@@ -140,7 +109,7 @@ public class GroupMember extends BaseEntity {
      *
      * @param role 새로운 역할 (OWNER, MANAGER, MEMBER)
      *
-     * 호출 위치: GroupServiceImpl.changeRole() (Phase 2에서 구현 예정)
+     * 호출 위치: GroupServiceImpl.changeRole()
      */
     public void changeRole(GroupRole role) {
         this.role = role;

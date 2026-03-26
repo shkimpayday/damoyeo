@@ -6,11 +6,11 @@ import {
   useDeleteGroup,
   useUpdateMemberRole,
   useRemoveMember,
-  useApproveMember,
-  useRejectMember,
 } from "@/features/groups";
 import type { GroupMemberDTO, GroupRole } from "@/features/groups";
 import { Avatar, EmptyState, Spinner, ResultModal } from "@/components/ui";
+import { useNotificationStore, getUnreadCount } from "@/features/notifications";
+import { MemberProfileModal } from "@/features/auth";
 
 function GroupManagePage() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -19,14 +19,14 @@ function GroupManagePage() {
   const [modalContent, setModalContent] = useState({ title: "", content: "" });
   const [selectedMember, setSelectedMember] = useState<GroupMemberDTO | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [profileMemberId, setProfileMemberId] = useState<number | null>(null);
 
   const { data: group, isLoading } = useGroupDetail(Number(groupId));
   const { data: members } = useGroupMembers(Number(groupId));
   const deleteMutation = useDeleteGroup();
   const updateRoleMutation = useUpdateMemberRole();
   const removeMutation = useRemoveMember();
-  const approveMutation = useApproveMember();
-  const rejectMutation = useRejectMember();
+  const { setUnreadCount } = useNotificationStore();
 
   if (isLoading) {
     return (
@@ -64,28 +64,6 @@ function GroupManagePage() {
     }
   };
 
-  const handleApprove = async (memberId: number) => {
-    try {
-      await approveMutation.mutateAsync({ groupId: group.id, memberId });
-      setModalContent({ title: "승인 완료", content: "가입이 승인되었습니다." });
-      setShowModal(true);
-    } catch {
-      setModalContent({ title: "승인 실패", content: "가입 승인에 실패했습니다." });
-      setShowModal(true);
-    }
-  };
-
-  const handleReject = async (memberId: number) => {
-    try {
-      await rejectMutation.mutateAsync({ groupId: group.id, memberId });
-      setModalContent({ title: "거절 완료", content: "가입이 거절되었습니다." });
-      setShowModal(true);
-    } catch {
-      setModalContent({ title: "거절 실패", content: "가입 거절에 실패했습니다." });
-      setShowModal(true);
-    }
-  };
-
   const handleRemoveMember = async (memberId: number, nickname: string) => {
     if (!confirm(`정말 ${nickname}님을 강퇴하시겠습니까?`)) {
       return;
@@ -107,7 +85,7 @@ function GroupManagePage() {
     try {
       await updateRoleMutation.mutateAsync({
         groupId: group.id,
-        memberId: selectedMember.id,
+        memberId: selectedMember.member.id,
         request: { role: newRole },
       });
       setShowRoleModal(false);
@@ -117,14 +95,18 @@ function GroupManagePage() {
         content: `${selectedMember.member.nickname}님의 역할이 변경되었습니다.`,
       });
       setShowModal(true);
+
+      // 역할 변경 시 알림이 발송되므로 알림 수 즉시 새로고침
+      const count = await getUnreadCount();
+      setUnreadCount(count);
     } catch {
       setModalContent({ title: "변경 실패", content: "역할 변경에 실패했습니다." });
       setShowModal(true);
     }
   };
 
-  const pendingMembers = members?.filter((m) => m.status === "PENDING") || [];
-  const approvedMembers = members?.filter((m) => m.status === "APPROVED") || [];
+  // 모든 멤버가 가입 시 즉시 승인됨
+  const approvedMembers = members || [];
 
   const getRoleLabel = (role: GroupRole) => {
     switch (role) {
@@ -151,48 +133,6 @@ function GroupManagePage() {
         </Link>
       </div>
 
-      {/* Pending Members */}
-      {pendingMembers.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-3">
-            가입 신청 ({pendingMembers.length})
-          </h2>
-          <div className="space-y-3">
-            {pendingMembers.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar
-                    src={member.member.profileImage}
-                    alt={member.member.nickname}
-                    size="md"
-                  />
-                  <span className="font-medium">{member.member.nickname}</span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleApprove(member.id)}
-                    disabled={approveMutation.isPending}
-                    className="px-3 py-1 text-sm bg-primary-500 text-white rounded-lg disabled:bg-gray-300"
-                  >
-                    승인
-                  </button>
-                  <button
-                    onClick={() => handleReject(member.id)}
-                    disabled={rejectMutation.isPending}
-                    className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-lg disabled:bg-gray-100"
-                  >
-                    거절
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Members */}
       <div className="mb-6">
         <h2 className="text-lg font-bold text-gray-900 mb-3">
@@ -206,13 +146,24 @@ function GroupManagePage() {
                 className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
               >
                 <div className="flex items-center gap-3">
-                  <Avatar
-                    src={member.member.profileImage}
-                    alt={member.member.nickname}
-                    size="md"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setProfileMemberId(member.member.id)}
+                  >
+                    <Avatar
+                      src={member.member.profileImage}
+                      alt={member.member.nickname}
+                      size="md"
+                    />
+                  </button>
                   <div>
-                    <p className="font-medium">{member.member.nickname}</p>
+                    <button
+                      type="button"
+                      onClick={() => setProfileMemberId(member.member.id)}
+                      className="font-medium text-gray-900 hover:text-primary-600 hover:underline"
+                    >
+                      {member.member.nickname}
+                    </button>
                     <button
                       onClick={() => {
                         if (member.role !== "OWNER" && group.myRole === "OWNER") {
@@ -220,7 +171,7 @@ function GroupManagePage() {
                           setShowRoleModal(true);
                         }
                       }}
-                      className={`text-xs ${
+                      className={`block text-xs ${
                         member.role !== "OWNER" && group.myRole === "OWNER"
                           ? "text-primary-600 hover:underline cursor-pointer"
                           : "text-gray-500"
@@ -321,6 +272,14 @@ function GroupManagePage() {
           title={modalContent.title}
           content={modalContent.content}
           callbackFn={() => setShowModal(false)}
+        />
+      )}
+
+      {/* Member Profile Modal */}
+      {profileMemberId && (
+        <MemberProfileModal
+          memberId={profileMemberId}
+          onClose={() => setProfileMemberId(null)}
         />
       )}
     </div>

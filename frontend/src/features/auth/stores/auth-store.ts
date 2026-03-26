@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { loginPost } from "../api";
 import { setCookie, removeCookie, getCookie } from "@/lib/cookie";
+import { queryClient } from "@/lib/react-query";
 import type { MemberInfo } from "../types";
 
 export interface AuthStore {
@@ -13,6 +14,7 @@ export interface AuthStore {
 }
 
 const initState: MemberInfo = {
+  id: undefined,
   email: "",
   nickname: "",
   profileImage: "",
@@ -43,10 +45,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
     try {
       const data = await loginPost(email, pw);
 
+      queryClient.clear();
       set({ member: { ...data }, status: "fulfilled" });
 
-      const newState = { ...data, status: "fulfilled" };
-      setCookie("member", JSON.stringify(newState), 1); // 1일
+      // ✅ status 제거, 쿠키 만료 시간을 Refresh Token과 동일하게 (1일)
+      setCookie("member", JSON.stringify(data), 1);
     } catch (error) {
       console.error("Login failed", error);
       set({ status: "error" });
@@ -61,6 +64,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   save: (memberInfo: MemberInfo) => {
     set({ member: memberInfo, status: "fulfilled" });
+    // ✅ 쿠키도 함께 업데이트
+    setCookie("member", JSON.stringify(memberInfo), 1);
   },
 
   updateProfile: (nickname: string, profileImage: string) => {

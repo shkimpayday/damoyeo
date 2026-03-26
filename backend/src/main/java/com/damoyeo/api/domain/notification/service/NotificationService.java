@@ -39,12 +39,12 @@ public interface NotificationService {
      * 다른 서비스(GroupService, MeetingService 등)에서 호출합니다.
      *
      * [사용 예시]
-     * // 가입 승인 시
+     * // 새 멤버 가입 시
      * notificationService.send(
-     *     member,
-     *     NotificationType.JOIN_APPROVED,
-     *     "가입이 승인되었습니다",
-     *     "강남 러닝 크루에 가입되었습니다.",
+     *     owner,
+     *     NotificationType.NEW_MEMBER,
+     *     "새 멤버 가입",
+     *     "홍길동님이 강남 러닝 크루에 가입했습니다.",
      *     groupId
      * );
      *
@@ -112,4 +112,18 @@ public interface NotificationService {
      * Controller: PATCH /api/notifications/read-all
      */
     void markAllAsRead(String email);
+
+
+    /**
+     * 개별 알림 삭제 처리
+     *
+     * [권한 확인]
+     * 본인의 알림만 삭제 처리 가능
+     *
+     * @param notificationId 알림 ID
+     * @param email 요청자 이메일 (권한 확인용)
+     *
+     * Controller: PATCH /api/notifications/{id}/delete
+     */
+    void delete(Long notificationId, String email);
 }

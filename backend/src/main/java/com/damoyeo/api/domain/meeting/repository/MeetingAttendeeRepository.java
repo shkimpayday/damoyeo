@@ -106,4 +106,27 @@ public interface MeetingAttendeeRepository extends JpaRepository<MeetingAttendee
      * (실제 로직에서는 findByMeetingIdAndMemberId를 더 많이 사용)
      */
     boolean existsByMeetingIdAndMemberId(Long meetingId, Long memberId);
+
+    // ========================================================================
+    // 정모 채팅 권한 확인
+    // ========================================================================
+
+    /**
+     * 회원이 정모에 참석 예정인지 확인
+     *
+     * [용도]
+     * 정모 채팅방 접근 권한 검증에 사용됩니다.
+     * ATTENDING 상태인 참석자만 채팅에 참여할 수 있습니다.
+     *
+     * @param meetingId 정모 ID
+     * @param memberId 회원 ID
+     * @return true: 참석 예정, false: 미참석 또는 다른 상태
+     *
+     * 호출 위치: ChatServiceImpl.validateMeetingChatAccess()
+     */
+    @Query("select case when count(ma) > 0 then true else false end " +
+            "from MeetingAttendee ma " +
+            "where ma.meeting.id = :meetingId and ma.member.id = :memberId " +
+            "and ma.status = 'ATTENDING'")
+    boolean isAttending(@Param("meetingId") Long meetingId, @Param("memberId") Long memberId);
 }

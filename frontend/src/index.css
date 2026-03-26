@@ -84,6 +84,11 @@ body {
   }
 }
 
+.app-full-width {
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  width: 100vw;
+}
 
 /* Grid layouts for different screen sizes (문토 스타일) */
 .grid-groups {
@@ -127,23 +132,20 @@ body {
 
 /* Section spacing */
 .section-spacing {
-  padding-top: 32px;
-  padding-bottom: 32px;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
 @media (min-width: 768px) {
   .section-spacing {
-    padding-top: 48px;
-    padding-bottom: 48px;
+    padding-top: 36px;
+    padding-bottom: 36px;
   }
 }
 
-/* Full bleed sections (banners, etc) */
+/* Full bleed sections (banners, etc) - breaks out of app-content */
 .full-bleed {
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
   width: 100vw;
-  position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
 }

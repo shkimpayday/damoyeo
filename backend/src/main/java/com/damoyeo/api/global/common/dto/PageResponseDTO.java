@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
  * }
  *
  * [Service에서 사용 예시]
- * return PageResponseDTO.<GroupDTO>withAll()
+ * return PageResponseDTO.<GroupDTO>builder()
  *     .pageRequestDTO(pageRequestDTO)
  *     .dtoList(groupDTOList)
  *     .totalCount(100)
@@ -100,9 +100,7 @@ public class PageResponseDTO<E> {
     /**
      * PageResponseDTO 생성자 (빌더 패턴으로 호출)
      *
-     * @Builder(builderMethodName = "withAll")
-     *   → PageResponseDTO.withAll().pageRequestDTO(...).build() 형태로 사용
-     *   → 일반적인 .builder() 대신 .withAll()을 사용합니다.
+     * PageResponseDTO.builder().pageRequestDTO(...).dtoList(...).totalCount(...).build()
      *
      * [페이지 번호 계산 로직 설명]
      *
@@ -126,7 +124,7 @@ public class PageResponseDTO<E> {
      * 6. next: 95 > 10 * 10 = 100 → false
      *    → 다음 페이지 그룹이 있는지 확인
      */
-    @Builder(builderMethodName = "withAll")
+    @Builder
     public PageResponseDTO(PageRequestDTO pageRequestDTO, List<E> dtoList, int totalCount) {
         // 데이터가 없으면 아무것도 설정하지 않음
         if (totalCount <= 0) {
@@ -166,7 +164,7 @@ public class PageResponseDTO<E> {
         this.nextPage = next ? end + 1 : 0;
 
         // 전체 페이지 수와 현재 페이지
-        this.totalPage = this.pageNumList.isEmpty() ? 0 : this.pageNumList.get(this.pageNumList.size() - 1);
+        this.totalPage = last;
         this.current = pageRequestDTO.getPage();
     }
 }

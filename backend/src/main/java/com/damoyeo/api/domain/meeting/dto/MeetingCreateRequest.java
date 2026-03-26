@@ -37,7 +37,7 @@ import java.time.LocalDateTime;
  *   "groupId": 1,
  *   "title": "5월 첫째 주 러닝",
  *   "description": "반포 한강공원에서 5km 러닝합니다",
- *   "location": "서울 서초구 반포대로 11길",
+ *   "address": "서울 서초구 반포대로 11길",
  *   "latitude": 37.5080,
  *   "longitude": 126.9956,
  *   "meetingDate": "2024-05-04T10:00:00",
@@ -86,7 +86,7 @@ public class MeetingCreateRequest {
      *
      * 사람이 읽을 수 있는 주소 형태
      */
-    private String location;
+    private String address;
 
     /**
      * 위도 (Latitude)

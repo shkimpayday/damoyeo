@@ -1,0 +1,124 @@
+# ============================================================
+# 다모여 (DaMoYeo) - 통합 .gitignore
+# ============================================================
+
+# ── 보안 (Security) ──────────────────────────────────────────
+*.pem
+*.key
+*.ppk
+
+
+# ── 환경변수 (Environment) ───────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+backend/application-local.yml
+backend/application-local.properties
+
+
+# ── Frontend ─────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Frontend 로그
+frontend/logs/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Vite local config
+frontend/*.local
+
+
+# ── Backend ──────────────────────────────────────────────────
+# Gradle
+backend/.gradle/
+backend/build/
+!backend/gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Java 컴파일 산출물
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# Backend out 디렉토리
+backend/out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Backend bin 디렉토리
+backend/bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# 사용자 업로드 파일 (폴더 구조만 유지)
+backend/uploads/**/*
+!backend/uploads/**/
+!backend/uploads/**/.gitkeep
+
+
+# ── IDE ──────────────────────────────────────────────────────
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# VS Code (extensions.json은 공유)
+.vscode/*
+!.vscode/extensions.json
+
+# Windows
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+
+# ── Claude Code ──────────────────────────────────────────────
+.claude/
+.playwright-mcp/
+
+
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+
+# ── 로그 & 임시 파일 ─────────────────────────────────────────
+*.log
+logs/
+*.tmp
+*.bak
+*.swp
+*.sw?
+*~
+
+
+# ── 개발 중 생성된 임시 파일 ─────────────────────────────────
+# 스크린샷 (Playwright MCP 등)
+admin-members-*.png
+my-groups-*.png
+
+# 잘못 생성된 파일
+nul
+
+# 로컬 작업 메모
+모임수정_구현_가이드.md

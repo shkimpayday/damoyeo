@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { REGIONS, SIDO_LIST } from "@/data/regions";
+import { REGIONS, SIDO_LIST, getRegionCoords } from "@/data/regions";
 
 interface RegionSelectProps {
   value: string;
-  onChange: (region: string) => void;
+  onChange: (region: string, coords?: { lat: number; lng: number } | null) => void;
   label?: string;
   required?: boolean;
   placeholder?: string;
@@ -45,19 +45,20 @@ export function RegionSelect({
     setSelectedSido(sido);
     // 세종시는 바로 선택 완료
     if (sido === "세종") {
-      onChange("세종");
+      onChange("세종", getRegionCoords("세종"));
       setIsOpen(false);
     }
   };
 
   const handleSigunguSelect = (sigungu: string) => {
-    onChange(`${selectedSido} ${sigungu}`);
+    const address = `${selectedSido} ${sigungu}`;
+    onChange(address, getRegionCoords(address));
     setIsOpen(false);
   };
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onChange("");
+    onChange("", null);
     setSelectedSido("");
   };
 

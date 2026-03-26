@@ -2,6 +2,93 @@
 
 이 파일은 Claude Code가 다모여 프로젝트 작업 시 참조할 수 있는 가이드입니다.
 
+---
+
+## ⚠️ 필수 개발 지침 (Claude Code 기본 적용)
+
+> **이 프로젝트는 7년차 풀스택 개발자의 포트폴리오용 프로젝트입니다.**
+> 모든 코드는 시니어 개발자 수준의 퀄리티와 구조를 갖춰야 합니다.
+
+### 코드 품질 기준
+
+1. **아키텍처 & 설계**
+   - 확장 가능하고 유지보수가 용이한 구조 설계
+   - SOLID 원칙 준수
+   - 적절한 디자인 패턴 적용 (Repository, Service, Factory 등)
+   - 관심사 분리 (Separation of Concerns) 철저히 적용
+
+2. **주석 & 문서화 (필수)**
+   - 모든 새로운 함수/메서드에 JSDoc(프론트) 또는 Javadoc(백엔드) 주석 작성
+   - 복잡한 비즈니스 로직에는 상세한 설명 주석 포함
+   - 왜(Why) 이렇게 구현했는지 의도를 명확히 기술
+   - API 엔드포인트에는 요청/응답 예시 포함
+
+3. **코드 스타일**
+   - 명확하고 의미 있는 변수/함수명 사용
+   - 매직 넘버 대신 상수 정의
+   - 에러 처리 철저히 (try-catch, 에러 바운더리 등)
+   - 타입 안전성 확보 (TypeScript strict, Java Generics 등)
+
+4. **프론트엔드 (React/TypeScript)**
+   - 컴포넌트 단위의 모듈화
+   - Custom Hooks로 로직 분리
+   - 성능 최적화 (React.memo, useMemo, useCallback 적절히 사용)
+   - 접근성(a11y) 고려
+
+5. **백엔드 (Spring Boot/Java)**
+   - 계층형 아키텍처 (Controller → Service → Repository)
+   - DTO 패턴으로 엔티티 노출 방지
+   - 적절한 예외 처리 및 글로벌 예외 핸들러
+   - 트랜잭션 관리 (@Transactional 적절히 사용)
+
+### 주석 작성 예시
+
+**프론트엔드 (TypeScript/React)**
+```typescript
+/**
+ * 모임 목록을 무한 스크롤로 조회하는 커스텀 훅
+ *
+ * @description
+ * - TanStack Query의 useInfiniteQuery를 활용하여 페이지네이션 처리
+ * - 스크롤 위치에 따라 자동으로 다음 페이지 로드
+ * - 검색 조건 변경 시 자동으로 캐시 무효화
+ *
+ * @param params - 검색 필터 조건 (카테고리, 키워드, 정렬 등)
+ * @returns 모임 목록 데이터 및 페이지네이션 상태
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage } = useGroupsInfinite({
+ *   categoryId: 1,
+ *   keyword: '운동'
+ * });
+ */
+```
+
+**백엔드 (Java/Spring)**
+```java
+/**
+ * 모임 가입 신청을 처리하는 서비스 메서드
+ *
+ * <p>가입 신청 프로세스:</p>
+ * <ol>
+ *   <li>모임 존재 여부 및 활성 상태 확인</li>
+ *   <li>중복 가입 신청 검증</li>
+ *   <li>최대 인원 초과 여부 확인</li>
+ *   <li>가입 신청 엔티티 생성 및 저장</li>
+ *   <li>모임장에게 알림 발송</li>
+ * </ol>
+ *
+ * @param groupId 가입할 모임 ID
+ * @param memberId 신청자 회원 ID
+ * @return 생성된 가입 신청 정보
+ * @throws GroupNotFoundException 모임이 존재하지 않는 경우
+ * @throws AlreadyJoinedException 이미 가입된 회원인 경우
+ * @throws GroupFullException 모임 정원이 초과된 경우
+ */
+```
+
+---
+
 ## 프로젝트 개요
 
 **다모여**는 소모임(somoim.co.kr)을 참조한 오프라인 모임 플랫폼입니다.
@@ -170,7 +257,6 @@ interface GroupDTO {
   status: 'ACTIVE' | 'INACTIVE' | 'DELETED';
   owner: MemberSummary;         // 중첩 객체
   myRole?: 'OWNER' | 'MANAGER' | 'MEMBER' | null;
-  myStatus?: 'APPROVED' | 'PENDING' | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -179,7 +265,6 @@ interface GroupMemberDTO {
   id: number;
   member: MemberSummary;        // 중첩 객체
   role: 'OWNER' | 'MANAGER' | 'MEMBER';
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
   joinedAt: string;
 }
 ```
@@ -228,10 +313,12 @@ interface NotificationDTO {
 // 알림 타입
 type NotificationType =
   | 'WELCOME'           // 회원가입 환영 (referenceType: SYSTEM)
-  | 'JOIN_APPROVED'     // 가입 승인 (referenceType: GROUP)
-  | 'JOIN_REJECTED'     // 가입 거절 (referenceType: GROUP)
-  | 'MEMBER_JOINED'     // 새 멤버 가입 (referenceType: GROUP)
+  | 'NEW_MEMBER'        // 새 멤버 가입 (referenceType: GROUP)
+  | 'MEMBER_LEFT'       // 멤버 탈퇴 (referenceType: GROUP)
   | 'ROLE_CHANGED'      // 역할 변경 (referenceType: GROUP)
+  | 'MEMBER_KICKED'     // 강퇴됨 (referenceType: GROUP)
+  | 'GROUP_DISBANDED'   // 모임 해체됨 (referenceType: GROUP)
+  | 'GROUP_UPDATE'      // 모임 정보 변경 (referenceType: GROUP)
   | 'NEW_MEETING'       // 새 정모 생성 (referenceType: MEETING)
   | 'MEETING_REMINDER'  // 정모 리마인더 (referenceType: MEETING)
   | 'MEETING_CANCELLED';// 정모 취소 (referenceType: MEETING)
@@ -261,6 +348,33 @@ interface EventDetailDTO extends EventBannerDTO {
 }
 ```
 **이벤트 타입**: PROMOTION (프로모션), NOTICE (공지), SPECIAL (특별 이벤트), FEATURE (신기능 소개)
+
+### Chat (채팅)
+```typescript
+type MessageType = "TEXT" | "IMAGE" | "SYSTEM";
+type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
+
+interface ChatMessageDTO {
+  id: number;
+  groupId: number;
+  sender: MemberSummary | null;    // SYSTEM 메시지는 null
+  message: string;
+  messageType: MessageType;
+  createdAt: string;
+}
+
+interface ChatRoomDTO {
+  groupId: number;
+  groupName: string;
+  latestMessage?: ChatMessageDTO;
+  unreadCount: number;
+}
+
+interface TypingEvent {
+  email: string;
+  typing: boolean;
+}
+```
 
 ---
 
@@ -304,7 +418,9 @@ interface EventDetailDTO extends EventBannerDTO {
 ### 정모 API
 | Method | Endpoint | Description | 인증 |
 |--------|----------|-------------|------|
-| GET | `/api/groups/{gid}/meetings` | 모임의 정모 목록 | O |
+| GET | `/api/groups/{gid}/meetings` | 모임의 정모 목록 (전체) | O |
+| GET | `/api/meetings/group/{gid}/upcoming` | 모임의 예정된 정모 (날짜 기반) | O |
+| GET | `/api/meetings/group/{gid}/past` | 모임의 지난 정모 (날짜 기반) | O |
 | POST | `/api/groups/{gid}/meetings` | 정모 생성 | O (OWNER/MANAGER) |
 | GET | `/api/meetings/{id}` | 정모 상세 | O |
 | PUT | `/api/meetings/{id}` | 정모 수정 | O (OWNER/MANAGER) |
@@ -313,6 +429,8 @@ interface EventDetailDTO extends EventBannerDTO {
 | DELETE | `/api/meetings/{id}/attend` | 참석 취소 | O |
 | GET | `/api/meetings/upcoming` | 다가오는 정모 | O |
 | GET | `/api/meetings/my` | 내 정모 | O |
+
+> **정모 상태 관리**: 스케줄러 대신 날짜 기반 필터링 사용. `meetingDate > now`이면 예정, `meetingDate <= now`이면 지난 정모로 분류.
 
 ### 카테고리 API
 | Method | Endpoint | Description | 인증 |
@@ -336,6 +454,26 @@ interface EventDetailDTO extends EventBannerDTO {
 | POST | `/api/events` | 이벤트 생성 | O (ADMIN) |
 | DELETE | `/api/events/{id}` | 이벤트 삭제 | O (ADMIN) |
 | PATCH | `/api/events/{id}/toggle` | 이벤트 활성화 토글 | O (ADMIN) |
+
+### 채팅 API
+| Method | Endpoint | Description | 인증 |
+|--------|----------|-------------|------|
+| GET | `/api/chat/{groupId}/messages` | 메시지 히스토리 (페이지네이션) | O |
+| GET | `/api/chat/{groupId}/unread-count` | 읽지 않은 메시지 개수 | O |
+| POST | `/api/chat/{groupId}/read` | 읽음 처리 | O |
+| GET | `/api/chat/my-chats` | 내 채팅방 목록 | O |
+
+**WebSocket 엔드포인트:**
+- `SEND /app/chat/{groupId}` - 메시지 전송 (클라이언트 → 서버)
+- `SUBSCRIBE /topic/chat/{groupId}` - 메시지 수신 (서버 → 클라이언트)
+- `SEND /app/chat/{groupId}/typing` - 타이핑 이벤트 전송
+- `SUBSCRIBE /topic/chat/{groupId}/typing` - 타이핑 이벤트 수신
+- `SUBSCRIBE /user/queue/errors` - 에러 메시지 수신 (개인)
+
+**WebSocket 연결:**
+- 엔드포인트: `ws://localhost:8080/ws` (SockJS)
+- 인증: CONNECT 프레임의 `Authorization` 헤더에 JWT 토큰 포함
+- 프로토콜: STOMP over SockJS
 
 ---
 
@@ -483,11 +621,19 @@ frontend/src/
 - [x] 무한 스크롤
 - [x] 프로필 이미지 업로드
 - [x] 프로필 수정 기능
-- [x] 멤버 관리 (역할 변경, 강퇴, 가입 승인/거절)
+- [x] 멤버 관리 (역할 변경, 강퇴)
 - [x] 모임/정모 수정 기능
 - [x] 알림 시스템 (회원가입 환영 알림, 폴링 기반)
 - [x] 이벤트/배너 시스템 (메인 배너 슬라이더, 이벤트 상세 페이지)
-- [ ] 실시간 채팅 (WebSocket/STOMP)
+- [x] 정모 상태 관리 (날짜 기반 예정/지난 정모 분리)
+- [x] 알림 확장 (강퇴/모임해체 알림)
+- [x] **실시간 채팅 (WebSocket/STOMP)**
+  - [x] WebSocket/STOMP 설정 및 JWT 인증
+  - [x] 메시지 송수신 및 히스토리 저장
+  - [x] 읽음 상태 추적 (unread count)
+  - [x] 타이핑 인디케이터 ("○○○님이 입력 중...")
+  - [x] 채팅 별도 페이지 분리 (`/groups/:groupId/chat`)
+  - [x] 스마트 자동 스크롤 (내 메시지 무조건 스크롤)
 - [ ] 실시간 알림 (SSE/WebSocket)
 
 ### Phase 3 - 고도화
@@ -514,18 +660,38 @@ backend/src/main/java/com/damoyeo/api/
 │   ├── notification/                # 알림
 │   ├── category/                    # 카테고리
 │   ├── email/                       # 이메일 인증
-│   └── event/                       # 이벤트/배너 (NEW)
+│   ├── event/                       # 이벤트/배너
+│   └── chat/                        # 채팅 (NEW)
+│       ├── controller/
+│       │   └── ChatController.java  # REST + WebSocket 엔드포인트
+│       ├── service/
+│       │   ├── ChatService.java
+│       │   └── ChatServiceImpl.java
+│       ├── repository/
+│       │   ├── ChatMessageRepository.java
+│       │   └── ChatReadRepository.java
+│       ├── entity/
+│       │   ├── ChatMessage.java     # 메시지 엔티티
+│       │   ├── ChatRead.java        # 읽음 상태 엔티티
+│       │   └── MessageType.java     # TEXT, IMAGE, SYSTEM
+│       └── dto/
+│           ├── ChatMessageDTO.java
+│           ├── SendMessageRequest.java
+│           └── ChatRoomDTO.java
 │
 ├── global/                          # 공통 모듈
 │   ├── config/                      # 설정
 │   │   ├── SecurityConfig.java      # Spring Security
 │   │   ├── WebConfig.java           # CORS, 정적 리소스
+│   │   ├── WebSocketConfig.java     # WebSocket/STOMP 설정 (NEW)
 │   │   └── MailConfig.java          # 메일 설정
 │   ├── security/                    # 보안
 │   │   ├── filter/
 │   │   │   ├── JWTCheckFilter.java  # JWT 검증 필터
 │   │   │   └── LoginFilter.java     # 로그인 처리
 │   │   ├── handler/
+│   │   ├── interceptor/
+│   │   │   └── JWTChannelInterceptor.java  # WebSocket JWT 인증 (NEW)
 │   │   └── CustomUserDetailsService.java
 │   ├── util/                        # 유틸리티
 │   │   ├── JWTUtil.java             # JWT 생성/검증

@@ -1,5 +1,6 @@
 import { Navigate, useNavigate } from "react-router";
 import { useAuthStore } from "../stores";
+import { queryClient } from "@/lib/react-query";
 
 export function useAuth() {
   const { member, status, login, logout } = useAuthStore();
@@ -17,6 +18,7 @@ export function useAuth() {
 
   const doLogout = () => {
     logout();
+    queryClient.clear();
     navigate("/");
   };
 

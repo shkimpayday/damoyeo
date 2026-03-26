@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * ============================================================================
@@ -61,11 +62,18 @@ public class GroupModifyRequest {
     private Long categoryId;
 
     /**
-     * 대표 이미지 URL (선택)
+     * 대표 이미지 URL (선택) - 기존 이미지 URL 유지용
      *
      * null이면 기존 이미지 유지
      */
     private String coverImage;
+
+    /**
+     * 대표 이미지 파일 (선택) - 새 이미지 업로드용
+     *
+     * MultipartFile로 파일을 직접 받습니다.
+     */
+    private MultipartFile coverImageFile;
 
     // ========================================================================
     // 위치 정보

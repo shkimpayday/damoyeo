@@ -36,9 +36,9 @@ import java.time.LocalDateTime;
  * [프론트엔드 응답 예시]
  * {
  *   "id": 1,
- *   "type": "JOIN_APPROVED",
- *   "title": "가입이 승인되었습니다",
- *   "message": "강남 러닝 크루에 가입되었습니다.",
+ *   "type": "NEW_MEMBER",
+ *   "title": "새 멤버 가입",
+ *   "message": "홍길동님이 강남 러닝 크루에 가입했습니다.",
  *   "relatedId": 5,
  *   "isRead": false,
  *   "createdAt": "2024-05-01T10:30:00"
@@ -66,9 +66,8 @@ public class NotificationDTO {
      * 알림 유형
      *
      * [값 예시]
-     * "JOIN_APPROVED", "JOIN_REJECTED", "NEW_MEETING",
-     * "MEETING_REMINDER", "MEETING_CANCELLED", "NEW_MEMBER",
-     * "GROUP_UPDATE", "ROLE_CHANGED"
+     * "NEW_MEETING", "MEETING_REMINDER", "MEETING_CANCELLED",
+     * "NEW_MEMBER", "MEMBER_LEFT", "GROUP_UPDATE", "ROLE_CHANGED", "WELCOME"
      *
      * [프론트엔드 활용]
      * 알림 유형에 따라 아이콘, 색상, 클릭 동작을 다르게 처리
@@ -76,10 +75,10 @@ public class NotificationDTO {
      * [예시 코드]
      * const getNotificationIcon = (type: string) => {
      *   switch (type) {
-     *     case 'JOIN_APPROVED': return '✅';
-     *     case 'JOIN_REJECTED': return '❌';
+     *     case 'NEW_MEMBER': return '👋';
      *     case 'NEW_MEETING': return '📅';
      *     case 'MEETING_CANCELLED': return '🚫';
+     *     case 'WELCOME': return '🎉';
      *     default: return '🔔';
      *   }
      * };
@@ -95,14 +94,14 @@ public class NotificationDTO {
      * 알림 제목
      *
      * [예시]
-     * - "가입이 승인되었습니다"
+     * - "새 멤버 가입"
      * - "새 정모가 등록되었습니다"
      * - "운영진으로 임명되었습니다"
      *
      * [프론트엔드 UI]
      * ┌─────────────────────────────────────┐
-     * │ ✅ 가입이 승인되었습니다            │ ← title
-     * │    강남 러닝 크루에 가입되었습니다.  │ ← message
+     * │ 👋 새 멤버 가입                     │ ← title
+     * │    홍길동님이 강남 러닝 크루에 가입  │ ← message
      * │    2시간 전                          │ ← createdAt
      * └─────────────────────────────────────┘
      */
@@ -162,8 +161,8 @@ public class NotificationDTO {
      *
      * [UI 예시]
      * ┌─────────────────────────────────────┐
-     * │ ● 가입이 승인되었습니다 (NEW!)      │ ← isRead = false
-     * │    강남 러닝 크루에 가입되었습니다.  │
+     * │ ● 새 멤버 가입 (NEW!)              │ ← isRead = false
+     * │    홍길동님이 강남 러닝 크루에 가입  │
      * ├─────────────────────────────────────┤
      * │ ○ 새 정모가 등록되었습니다          │ ← isRead = true
      * │    5월 첫째 주 러닝                 │

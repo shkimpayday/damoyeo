@@ -22,7 +22,7 @@ import java.util.List;
  * [기능 분류]
  * - CRUD: 모임 생성/조회/수정/삭제
  * - 목록 조회: 리스트, 검색, 내 모임, 근처 모임
- * - 멤버 관리: 가입, 탈퇴, 승인, 거절, 강퇴, 역할 변경
+ * - 멤버 관리: 가입, 탈퇴, 강퇴, 역할 변경
  *
  * [사용 위치]
  * - GroupController에서 주입받아 사용
@@ -105,19 +105,22 @@ public interface GroupService {
     // ========================================================================
 
     /**
-     * 모임 목록 조회 (페이지네이션)
+     * 모임 목록 조회 (페이지네이션 + 검색 + 정렬)
      *
      * [조건]
      * - ACTIVE 상태인 모임만 조회
      * - categoryId가 주어지면 해당 카테고리 필터링
+     * - keyword가 주어지면 모임 이름 검색
      *
      * @param pageRequestDTO 페이지 정보 (page, size)
      * @param categoryId 카테고리 ID (null이면 전체)
+     * @param keyword 검색 키워드 (null이면 검색 안 함)
+     * @param sort 정렬 기준 (latest, popular)
      * @return 페이지네이션된 모임 목록
      *
-     * Controller: GET /api/groups?categoryId=1&page=1&size=10
+     * Controller: GET /api/groups?categoryId=1&keyword=러닝&sort=popular&page=1&size=10
      */
-    PageResponseDTO<GroupDTO> getList(PageRequestDTO pageRequestDTO, Long categoryId);
+    PageResponseDTO<GroupDTO> getList(PageRequestDTO pageRequestDTO, Long categoryId, String keyword, String sort);
 
     /**
      * 모임 검색
@@ -135,9 +138,6 @@ public interface GroupService {
 
     /**
      * 내가 가입한 모임 목록 조회
-     *
-     * [조건]
-     * 승인된 멤버(APPROVED)로 가입한 모임만 조회
      *
      * @param email 사용자 이메일
      * @return 내 모임 목록
@@ -178,17 +178,15 @@ public interface GroupService {
     // ========================================================================
 
     /**
-     * 모임 가입 신청
+     * 모임 가입
      *
      * [처리 흐름]
-     * 1. 중복 가입 확인 (이미 신청했거나 멤버인 경우 에러)
+     * 1. 중복 가입 확인 (이미 멤버인 경우 에러)
      * 2. 정원 확인 (가득 찼으면 에러)
-     * 3. GroupMember 생성
-     *    - 공개 모임: APPROVED (즉시 승인)
-     *    - 비공개 모임: PENDING (승인 대기)
+     * 3. GroupMember 생성 (즉시 APPROVED)
      *
      * @param groupId 모임 ID
-     * @param email 가입 신청자 이메일
+     * @param email 가입자 이메일
      *
      * Controller: POST /api/groups/{id}/join
      */
@@ -206,40 +204,6 @@ public interface GroupService {
      * Controller: POST /api/groups/{id}/leave
      */
     void leave(Long groupId, String email);
-
-    /**
-     * 가입 승인
-     *
-     * [권한]
-     * 모임장(OWNER) 또는 운영진(MANAGER)
-     *
-     * [동작]
-     * PENDING → APPROVED
-     *
-     * @param groupId 모임 ID
-     * @param memberId 승인할 회원 ID
-     * @param ownerEmail 요청자 이메일 (권한 확인)
-     *
-     * Controller: POST /api/groups/{id}/members/{memberId}/approve
-     */
-    void approveMember(Long groupId, Long memberId, String ownerEmail);
-
-    /**
-     * 가입 거절
-     *
-     * [권한]
-     * 모임장(OWNER) 또는 운영진(MANAGER)
-     *
-     * [동작]
-     * PENDING → REJECTED
-     *
-     * @param groupId 모임 ID
-     * @param memberId 거절할 회원 ID
-     * @param ownerEmail 요청자 이메일 (권한 확인)
-     *
-     * Controller: POST /api/groups/{id}/members/{memberId}/reject
-     */
-    void rejectMember(Long groupId, Long memberId, String ownerEmail);
 
     /**
      * 멤버 강퇴
@@ -280,26 +244,12 @@ public interface GroupService {
      * 멤버 목록 조회
      *
      * @param groupId 모임 ID
-     * @param status 조회할 상태 (APPROVED, PENDING 등, null이면 APPROVED)
+     * @param status 조회할 상태 (null이면 APPROVED)
      * @return 멤버 목록
      *
-     * Controller: GET /api/groups/{id}/members?status=APPROVED
+     * Controller: GET /api/groups/{id}/members
      */
     List<GroupMemberDTO> getMembers(Long groupId, String status);
-
-    /**
-     * 가입 대기 목록 조회
-     *
-     * [권한]
-     * 모임장(OWNER) 또는 운영진(MANAGER)
-     *
-     * @param groupId 모임 ID
-     * @param ownerEmail 요청자 이메일 (권한 확인)
-     * @return 가입 대기 중인 멤버 목록
-     *
-     * Controller: GET /api/groups/{id}/members/pending
-     */
-    List<GroupMemberDTO> getPendingMembers(Long groupId, String ownerEmail);
 
 
     //// 정모 목록용 DTO (간소화)

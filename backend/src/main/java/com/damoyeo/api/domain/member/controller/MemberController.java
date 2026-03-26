@@ -3,6 +3,7 @@ package com.damoyeo.api.domain.member.controller;
 import com.damoyeo.api.domain.member.dto.MemberDTO;
 import com.damoyeo.api.domain.member.dto.MemberModifyRequest;
 import com.damoyeo.api.domain.member.dto.MemberSignupRequest;
+import com.damoyeo.api.domain.member.dto.PublicProfileDTO;
 import com.damoyeo.api.domain.member.service.MemberService;
 import com.damoyeo.api.global.util.JWTUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -218,5 +219,22 @@ public class MemberController {
 
         memberService.updateLocation(member.getEmail(), lat, lng, address);
         return ResponseEntity.ok(Map.of("message", "위치 정보가 업데이트되었습니다."));
+    }
+
+    /**
+     * 공개 프로필 조회
+     *
+     * 다른 회원의 공개 프로필 정보를 조회합니다.
+     * 이메일, 비밀번호 등 민감한 정보는 포함되지 않습니다.
+     *
+     * [프론트엔드 요청]
+     * GET /api/member/{memberId}/profile
+     * Authorization: Bearer {accessToken}
+     */
+    @GetMapping("/{memberId}/profile")
+    @Operation(summary = "공개 프로필 조회", description = "회원의 공개 프로필을 조회합니다.")
+    public ResponseEntity<PublicProfileDTO> getPublicProfile(@PathVariable Long memberId) {
+        log.info("Get public profile: memberId={}", memberId);
+        return ResponseEntity.ok(memberService.getPublicProfile(memberId));
     }
 }

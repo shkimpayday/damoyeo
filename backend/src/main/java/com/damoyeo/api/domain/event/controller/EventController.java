@@ -3,12 +3,14 @@ package com.damoyeo.api.domain.event.controller;
 import com.damoyeo.api.domain.event.dto.EventBannerDTO;
 import com.damoyeo.api.domain.event.dto.EventCreateRequest;
 import com.damoyeo.api.domain.event.dto.EventDetailDTO;
+import com.damoyeo.api.domain.event.dto.EventUpdateRequest;
 import com.damoyeo.api.domain.event.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,6 +35,7 @@ import java.util.Map;
  * │ GET    │ /api/events/{id}             │ 이벤트 상세 조회    │ X   │
  * │ GET    │ /api/events                  │ 전체 이벤트 목록    │ X   │
  * │ POST   │ /api/events                  │ 이벤트 생성 (관리자) │ O   │
+ * │ PUT    │ /api/events/{id}             │ 이벤트 수정 (관리자) │ O   │
  * │ DELETE │ /api/events/{id}             │ 이벤트 삭제 (관리자) │ O   │
  * │ PATCH  │ /api/events/{id}/toggle      │ 활성화 토글 (관리자) │ O   │
  * └────────────────────────────────────────────────────────────────────────┘
@@ -132,13 +135,14 @@ public class EventController {
      * @return 전체 이벤트 목록
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "전체 이벤트 목록 조회", description = "관리자 페이지용")
     public ResponseEntity<List<EventDetailDTO>> getAllEvents() {
         return ResponseEntity.ok(eventService.getAllEvents());
     }
 
     // ========================================================================
-    // 관리자 API (인증 필요 - Phase 2에서 권한 체크 추가)
+    // 관리자 API
     // ========================================================================
 
     /**
@@ -159,10 +163,39 @@ public class EventController {
      * @return 생성된 이벤트 ID { "id": 1 }
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "이벤트 생성", description = "관리자 전용")
     public ResponseEntity<Map<String, Long>> createEvent(@Valid @RequestBody EventCreateRequest request) {
         Long eventId = eventService.createEvent(request);
         return ResponseEntity.ok(Map.of("id", eventId));
+    }
+
+    /**
+     * 이벤트 수정 (관리자용)
+     *
+     * 제목, 설명, 이미지 URL, 링크 URL, 타입, 기간 등을 수정합니다.
+     *
+     * [프론트엔드 요청]
+     * PUT /api/events/1
+     * Authorization: Bearer {accessToken}
+     * {
+     *   "title": "수정된 제목",
+     *   "imageUrl": "https://new-image.jpg",
+     *   "startDate": "2026-04-01T00:00:00",
+     *   "endDate": "2026-04-30T23:59:59"
+     * }
+     *
+     * @param eventId 이벤트 ID
+     * @param request 이벤트 수정 요청 DTO
+     * @return 수정된 이벤트 상세 정보
+     */
+    @PutMapping("/{eventId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "이벤트 수정", description = "관리자 전용")
+    public ResponseEntity<EventDetailDTO> updateEvent(
+            @PathVariable Long eventId,
+            @Valid @RequestBody EventUpdateRequest request) {
+        return ResponseEntity.ok(eventService.updateEvent(eventId, request));
     }
 
     /**
@@ -178,6 +211,7 @@ public class EventController {
      * @return 성공 결과 { "result": "SUCCESS" }
      */
     @DeleteMapping("/{eventId}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "이벤트 삭제", description = "관리자 전용")
     public ResponseEntity<Map<String, String>> deleteEvent(@PathVariable Long eventId) {
         eventService.deleteEvent(eventId);
@@ -197,6 +231,7 @@ public class EventController {
      * @return 성공 결과 { "result": "SUCCESS" }
      */
     @PatchMapping("/{eventId}/toggle")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "이벤트 활성화/비활성화 토글", description = "관리자 전용")
     public ResponseEntity<Map<String, String>> toggleEventActive(@PathVariable Long eventId) {
         eventService.toggleEventActive(eventId);

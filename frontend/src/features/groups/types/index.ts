@@ -37,8 +37,8 @@ export type GroupStatus = "ACTIVE" | "INACTIVE" | "DELETED";
 // 모임 멤버 역할
 export type GroupRole = "OWNER" | "MANAGER" | "MEMBER";
 
-// 모임 멤버 상태
-export type GroupMemberStatus = "PENDING" | "APPROVED" | "REJECTED" | "BANNED";
+// 모임 멤버 상태 (가입 시 즉시 APPROVED, BANNED는 강퇴된 상태)
+export type GroupMemberStatus = "APPROVED" | "BANNED";
 
 // 모임 상세 DTO
 export interface GroupDTO {
@@ -124,14 +124,12 @@ export interface GroupMemberDTO {
   id: number;
   member: MemberSummary;
   role: GroupRole;
-  status: GroupMemberStatus;
   joinedAt: string;
 }
 
-// 멤버 역할/상태 변경 요청
+// 멤버 역할 변경 요청
 export interface MemberRoleUpdateRequest {
   role?: GroupRole;
-  status?: GroupMemberStatus;
 }
 
 // 페이지 응답 DTO

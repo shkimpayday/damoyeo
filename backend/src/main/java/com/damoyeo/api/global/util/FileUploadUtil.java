@@ -65,6 +65,24 @@ public class FileUploadUtil {
     }
 
     /**
+     * 갤러리 이미지 업로드
+     *
+     * [저장 경로]
+     * /uploads/gallery/{groupId}/{UUID}.{확장자}
+     *
+     * @param file 업로드할 파일
+     * @param groupId 모임 ID (폴더 구분용)
+     * @return 저장된 파일의 URL 경로
+     */
+    public String uploadGalleryImage(MultipartFile file, Long groupId) {
+        validateImageFile(file);
+
+        String subDir = "gallery/" + groupId;
+        String savedFileName = saveFile(file, subDir);
+        return "/uploads/" + subDir + "/" + savedFileName;
+    }
+
+    /**
      * 파일 저장
      *
      * @param file 업로드할 파일
