@@ -50,6 +50,8 @@ services:
       UPLOAD_PATH: /app/uploads
       # Frontend URL (카카오페이 콜백 등)
       FRONTEND_URL: ${FRONTEND_URL}
+      # Kakao OAuth Login (REST API 키)
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
     volumes:
       # 업로드 파일 영속 저장 (컨테이너 재시작 후에도 유지)
       - uploads_data:/app/uploads

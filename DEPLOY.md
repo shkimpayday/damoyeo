@@ -261,8 +261,8 @@ https://github.com/{계정명}/{레포명}/settings/secrets/actions
 | `CORS_ALLOWED_ORIGINS` | `http://13.125.123.456` | 1-3단계 IP 앞에 `http://` 붙이기 |
 | `FRONTEND_URL` | `http://13.125.123.456` | 위와 동일 |
 | `VITE_API_HOST` | `http://13.125.123.456` | 위와 동일 |
-| `VITE_KAKAO_CLIENT_ID` | 카카오 앱 키 | 카카오 개발자 콘솔에서 확인 |
-| `VITE_KAKAO_REDIRECT_URI` | `http://13.125.123.456/member/kakao` | IP 뒤에 `/member/kakao` 붙이기 |
+| `VITE_KAKAO_CLIENT_ID` | 카카오 REST API 키 | [카카오 개발자 콘솔](https://developers.kakao.com/console/app) → 앱 선택 → 앱 → 플랫폼 키 → REST API 키 |
+| `KAKAO_CLIENT_ID` | 카카오 REST API 키 | `VITE_KAKAO_CLIENT_ID`와 **동일한 값** 입력 (백엔드 카카오 로그인용) |
 
 ---
 

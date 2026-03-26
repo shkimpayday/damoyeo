@@ -109,4 +109,22 @@ public interface MemberService {
      * @return 공개 프로필 정보
      */
     PublicProfileDTO getPublicProfile(Long memberId);
+
+    /**
+     * 카카오 OAuth 로그인
+     *
+     * <p>카카오 인가 코드를 이용한 소셜 로그인 처리:</p>
+     * <ol>
+     *   <li>카카오 인가 코드 → 카카오 액세스 토큰 교환</li>
+     *   <li>카카오 액세스 토큰으로 사용자 정보 조회</li>
+     *   <li>이메일 기반으로 기존 회원 조회 또는 신규 회원 생성</li>
+     *   <li>회원 정보 반환 (JWT 토큰은 Controller에서 발급)</li>
+     * </ol>
+     *
+     * @param code        카카오 인가 코드 (프론트엔드에서 전달)
+     * @param redirectUri 카카오 로그인 시 사용한 Redirect URI
+     * @return 로그인된 회원 정보 DTO
+     * @throws com.damoyeo.api.global.exception.CustomException 카카오 API 호출 실패 시
+     */
+    MemberDTO kakaoLogin(String code, String redirectUri);
 }

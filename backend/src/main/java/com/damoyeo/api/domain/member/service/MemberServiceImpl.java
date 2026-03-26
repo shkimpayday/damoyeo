@@ -17,13 +17,21 @@ import com.damoyeo.api.global.exception.CustomException;
 import com.damoyeo.api.global.util.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +67,17 @@ public class MemberServiceImpl implements MemberService {
 
     /** 알림 서비스 */
     private final NotificationService notificationService;
+
+    /** 외부 API 호출 (카카오 OAuth) */
+    private final RestTemplate restTemplate;
+
+    /** 카카오 OAuth REST API 키 */
+    @Value("${kakao.oauth.client-id:}")
+    private String kakaoClientId;
+
+    /** 카카오 OAuth Client Secret (미설정 시 빈 문자열) */
+    @Value("${kakao.oauth.client-secret:}")
+    private String kakaoClientSecret;
 
     /**
      * 회원가입
@@ -287,6 +306,204 @@ public class MemberServiceImpl implements MemberService {
                 .joinedGroups(joinedGroups)
                 .showJoinedGroups(member.isShowJoinedGroups())
                 .build();
+    }
+
+    /**
+     * 카카오 OAuth 로그인
+     *
+     * <p>처리 흐름:</p>
+     * <ol>
+     *   <li>카카오 인가 코드 → 카카오 액세스 토큰 교환</li>
+     *   <li>카카오 사용자 정보 조회 (이메일, 닉네임, 프로필 이미지)</li>
+     *   <li>이메일로 기존 회원 조회, 없으면 자동 가입</li>
+     * </ol>
+     *
+     * @param code        카카오 인가 코드
+     * @param redirectUri 카카오 로그인 시 사용한 Redirect URI
+     * @return 회원 DTO
+     */
+    @Override
+    public MemberDTO kakaoLogin(String code, String redirectUri) {
+        // ========== 1. 카카오 액세스 토큰 발급 ==========
+        String kakaoAccessToken = getKakaoAccessToken(code, redirectUri);
+
+        // ========== 2. 카카오 사용자 정보 조회 ==========
+        Map<String, Object> userInfo = getKakaoUserInfo(kakaoAccessToken);
+
+        // ========== 3. 회원 조회 또는 신규 가입 ==========
+        Member member = findOrCreateKakaoMember(userInfo);
+
+        return entityToDTO(member);
+    }
+
+    /**
+     * 카카오 인가 코드를 액세스 토큰으로 교환
+     *
+     * <p>POST https://kauth.kakao.com/oauth/token</p>
+     *
+     * @param code        카카오 인가 코드
+     * @param redirectUri 프론트엔드에서 사용한 Redirect URI (카카오에 등록된 URI와 일치해야 함)
+     * @return 카카오 액세스 토큰
+     * @throws CustomException 토큰 발급 실패 시
+     */
+    @SuppressWarnings("unchecked")
+    private String getKakaoAccessToken(String code, String redirectUri) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("grant_type", "authorization_code");
+        params.add("client_id", kakaoClientId);
+        params.add("redirect_uri", redirectUri);
+        params.add("code", code);
+
+        // Client Secret이 설정된 경우에만 포함
+        if (kakaoClientSecret != null && !kakaoClientSecret.isBlank()) {
+            params.add("client_secret", kakaoClientSecret);
+        }
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    "https://kauth.kakao.com/oauth/token",
+                    request,
+                    Map.class
+            );
+
+            Map<String, Object> body = response.getBody();
+            if (body == null || !body.containsKey("access_token")) {
+                throw new CustomException("카카오 액세스 토큰 발급 실패", HttpStatus.BAD_GATEWAY);
+            }
+
+            return (String) body.get("access_token");
+
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("카카오 토큰 발급 실패: {}", e.getMessage());
+            throw new CustomException("카카오 로그인 처리 중 오류가 발생했습니다.", HttpStatus.BAD_GATEWAY);
+        }
+    }
+
+    /**
+     * 카카오 액세스 토큰으로 사용자 정보 조회
+     *
+     * <p>GET https://kapi.kakao.com/v2/user/me</p>
+     *
+     * @param kakaoAccessToken 카카오 액세스 토큰
+     * @return 카카오 사용자 정보 (id, kakao_account.email, kakao_account.profile 등)
+     * @throws CustomException 사용자 정보 조회 실패 시
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getKakaoUserInfo(String kakaoAccessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + kakaoAccessToken);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    "https://kapi.kakao.com/v2/user/me",
+                    HttpMethod.GET,
+                    request,
+                    Map.class
+            );
+
+            Map<String, Object> body = response.getBody();
+            if (body == null) {
+                throw new CustomException("카카오 사용자 정보 조회 실패", HttpStatus.BAD_GATEWAY);
+            }
+
+            return body;
+
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("카카오 사용자 정보 조회 실패: {}", e.getMessage());
+            throw new CustomException("카카오 사용자 정보를 가져올 수 없습니다.", HttpStatus.BAD_GATEWAY);
+        }
+    }
+
+    /**
+     * 카카오 사용자 정보로 기존 회원 조회 또는 신규 회원 생성
+     *
+     * <p>신규 가입 처리:</p>
+     * <ul>
+     *   <li>이메일이 없는 경우 kakao_{id}@kakao.damoyeo.com 형태로 생성</li>
+     *   <li>닉네임 중복 시 숫자 접미사 추가</li>
+     *   <li>비밀번호는 랜덤 UUID로 설정 (소셜 로그인이므로 사용 불가)</li>
+     *   <li>신규 가입 시 환영 알림 발송</li>
+     * </ul>
+     *
+     * @param userInfo 카카오 사용자 정보 Map
+     * @return 조회 또는 생성된 Member 엔티티
+     */
+    @SuppressWarnings("unchecked")
+    private Member findOrCreateKakaoMember(Map<String, Object> userInfo) {
+        Long kakaoId = ((Number) userInfo.get("id")).longValue();
+
+        // kakao_account에서 이메일, 닉네임, 프로필 이미지 추출
+        Map<String, Object> kakaoAccount = (Map<String, Object>) userInfo.get("kakao_account");
+        String email = null;
+        String nickname = "카카오사용자";
+        String profileImage = null;
+
+        if (kakaoAccount != null) {
+            // 이메일 (카카오 동의항목에서 이메일 제공 동의한 경우에만 존재)
+            email = (String) kakaoAccount.get("email");
+
+            Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+            if (profile != null) {
+                String kakaoNickname = (String) profile.get("nickname");
+                if (kakaoNickname != null && !kakaoNickname.isBlank()) {
+                    nickname = kakaoNickname;
+                }
+                profileImage = (String) profile.get("profile_image_url");
+            }
+        }
+
+        // 이메일이 없으면 kakao id 기반으로 생성
+        if (email == null || email.isBlank()) {
+            email = "kakao_" + kakaoId + "@kakao.damoyeo.com";
+        }
+
+        // 기존 회원이면 반환
+        Optional<Member> existing = memberRepository.getWithRoles(email);
+        if (existing.isPresent()) {
+            log.info("카카오 기존 회원 로그인: {}", email);
+            return existing.get();
+        }
+
+        // 닉네임 중복 처리
+        String finalNickname = nickname;
+        if (memberRepository.existsByNickname(finalNickname)) {
+            finalNickname = finalNickname + "_" + (kakaoId % 10000);
+        }
+
+        // 신규 회원 생성
+        Member newMember = Member.builder()
+                .email(email)
+                .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .nickname(finalNickname)
+                .profileImage(profileImage)
+                .social(true)
+                .build();
+        newMember.addRole(MemberRole.USER);
+
+        Member saved = memberRepository.save(newMember);
+        log.info("카카오 신규 회원 가입: {}", email);
+
+        // 환영 알림 발송
+        notificationService.send(
+                saved,
+                NotificationType.WELCOME,
+                "다모여에 오신 것을 환영합니다! 🎉",
+                "카카오 계정으로 가입하셨습니다. 다양한 모임을 만나보세요!",
+                null
+        );
+
+        return saved;
     }
 
     /**

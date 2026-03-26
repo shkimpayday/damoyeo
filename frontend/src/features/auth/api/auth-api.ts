@@ -96,9 +96,18 @@ export const getPublicProfile = async (memberId: number): Promise<PublicProfile>
 
 /**
  * 카카오 로그인
+ *
+ * @param code 카카오 인가 코드 (카카오 인가 페이지에서 redirect_uri로 전달됨)
+ *
+ * redirectUri를 함께 전달하는 이유:
+ * 카카오 토큰 발급 시 redirect_uri가 카카오에 등록된 URI와 정확히 일치해야 함.
+ * 로컬(5173)과 배포 서버(EC2)가 다르므로 런타임에 동적으로 결정.
  */
 export const kakaoLogin = async (code: string): Promise<MemberInfo> => {
-  const res = await axios.get(`${prefix}/kakao?code=${code}`);
+  const redirectUri = `${window.location.origin}/member/kakao`;
+  const res = await axios.get(
+    `${prefix}/kakao?code=${code}&redirectUri=${encodeURIComponent(redirectUri)}`
+  );
   return res.data;
 };
 

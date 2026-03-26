@@ -57,7 +57,6 @@ jobs:
           build-args: |
             VITE_API_HOST=${{ secrets.VITE_API_HOST }}
             VITE_KAKAO_CLIENT_ID=${{ secrets.VITE_KAKAO_CLIENT_ID }}
-            VITE_KAKAO_REDIRECT_URI=${{ secrets.VITE_KAKAO_REDIRECT_URI }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
@@ -89,6 +88,7 @@ jobs:
               "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" \
               "CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}" \
               "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" \
+              "KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }}" \
               > .env
 
             # 최신 이미지 pull

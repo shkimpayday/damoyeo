@@ -17,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -236,5 +237,59 @@ public class MemberController {
     public ResponseEntity<PublicProfileDTO> getPublicProfile(@PathVariable Long memberId) {
         log.info("Get public profile: memberId={}", memberId);
         return ResponseEntity.ok(memberService.getPublicProfile(memberId));
+    }
+
+    /**
+     * 카카오 OAuth 로그인
+     *
+     * [처리 흐름]
+     * 1. 프론트엔드: 카카오 인가 페이지 → 사용자 동의 → redirect_uri?code={code}로 리다이렉트
+     * 2. 프론트엔드: code와 redirectUri를 이 엔드포인트로 전달
+     * 3. 백엔드: 카카오 토큰 발급 → 사용자 정보 조회 → 회원 처리 → JWT 발급
+     *
+     * [프론트엔드 요청]
+     * GET /api/member/kakao?code={code}&redirectUri={uri}
+     *
+     * [응답]
+     * {
+     *   "id": 1,
+     *   "accessToken": "eyJ...",
+     *   "refreshToken": "eyJ...",
+     *   "email": "user@example.com",
+     *   "nickname": "홍길동",
+     *   "profileImage": "https://...",
+     *   "roleNames": ["USER"],
+     *   "social": true
+     * }
+     *
+     * @param code        카카오 인가 코드
+     * @param redirectUri 카카오 로그인 시 사용한 Redirect URI
+     */
+    @GetMapping("/kakao")
+    @Operation(summary = "카카오 로그인", description = "카카오 OAuth 인가 코드로 로그인합니다.")
+    public ResponseEntity<Map<String, Object>> kakaoLogin(
+            @RequestParam String code,
+            @RequestParam String redirectUri) {
+
+        log.info("Kakao login request: redirectUri={}", redirectUri);
+
+        MemberDTO member = memberService.kakaoLogin(code, redirectUri);
+
+        // JWT 토큰 생성
+        String accessToken = jwtUtil.generateAccessToken(member.getClaims());
+        String refreshToken = jwtUtil.generateRefreshToken(member.getClaims());
+
+        // null 값을 허용하기 위해 HashMap 사용 (Map.of는 null 불가)
+        Map<String, Object> result = new HashMap<>();
+        result.put("id", member.getId());
+        result.put("accessToken", accessToken);
+        result.put("refreshToken", refreshToken);
+        result.put("email", member.getEmail());
+        result.put("nickname", member.getNickname());
+        result.put("profileImage", member.getProfileImage() != null ? member.getProfileImage() : "");
+        result.put("roleNames", member.getRoleNames());
+        result.put("social", member.isSocial());
+
+        return ResponseEntity.ok(result);
     }
 }
