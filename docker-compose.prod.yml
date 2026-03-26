@@ -52,6 +52,8 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
       # Kakao OAuth Login (REST API 키)
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      # Kakao OAuth Client Secret (보안 활성화 시 필수)
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:}
     volumes:
       # 업로드 파일 영속 저장 (컨테이너 재시작 후에도 유지)
       - uploads_data:/app/uploads
