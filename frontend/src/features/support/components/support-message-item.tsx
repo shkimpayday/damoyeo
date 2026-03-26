@@ -39,7 +39,7 @@ export function SupportMessageItem({ message, isMine }: SupportMessageItemProps)
       {!isMine && (
         <Avatar
           src={message.sender?.profileImage}
-          name={message.sender?.nickname ?? (message.isAdmin ? "상담사" : "익명")}
+          alt={message.sender?.nickname ?? (message.isAdmin ? "상담사" : "익명")}
           size="sm"
         />
       )}

@@ -4,7 +4,6 @@ import { Spinner } from "@/components/ui";
 import { getImageUrl } from "@/utils";
 import { useRecentGalleryPosts, useGalleryPostCount } from "../hooks/use-gallery";
 import { PostLightbox } from "./post-lightbox";
-import type { GalleryPostDTO } from "../types";
 
 /**
  * ============================================================================

@@ -63,7 +63,7 @@ export default function MemberProfilePage() {
           <div className="flex items-center gap-4">
             <Avatar
               src={profile.profileImage}
-              name={profile.nickname}
+              alt={profile.nickname}
               size="xl"
             />
             <div className="flex-1">

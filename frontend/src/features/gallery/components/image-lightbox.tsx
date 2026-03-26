@@ -158,7 +158,8 @@ export function ImageLightbox({
   // 다운로드 처리 (cross-origin 대응: Blob으로 다운로드)
   const handleDownload = async () => {
     try {
-      const imageUrl = getImageUrl(currentImage.imageUrl);
+      const primaryUrl = currentImage.images?.[0]?.imageUrl || currentImage.thumbnailUrl;
+      const imageUrl = getImageUrl(primaryUrl);
       if (!imageUrl) return;
 
       const response = await fetch(imageUrl);
@@ -166,12 +167,13 @@ export function ImageLightbox({
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = currentImage.originalFileName || `image-${currentImage.id}.jpg`;
+      link.download = currentImage.images?.[0]?.originalFileName || `image-${currentImage.id}.jpg`;
       link.click();
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Download failed:", error);
-      window.open(getImageUrl(currentImage.imageUrl), "_blank");
+      const primaryUrl = currentImage.images?.[0]?.imageUrl || currentImage.thumbnailUrl;
+      window.open(getImageUrl(primaryUrl), "_blank");
     }
   };
 
@@ -192,7 +194,7 @@ export function ImageLightbox({
     if (!commentInput.trim() || addCommentMutation.isPending) return;
 
     addCommentMutation.mutate(
-      { imageId: currentImage.id, content: commentInput.trim() },
+      { postId: currentImage.id, content: commentInput.trim() },
       {
         onSuccess: () => {
           setCommentInput("");
@@ -210,7 +212,7 @@ export function ImageLightbox({
 
     deleteCommentMutation.mutate({
       commentId: comment.id,
-      imageId: currentImage.id,
+      postId: currentImage.id,
     });
   };
 
@@ -293,7 +295,7 @@ export function ImageLightbox({
 
           {/* 이미지 */}
           <img
-            src={getImageUrl(currentImage.imageUrl) || ""}
+            src={getImageUrl(currentImage.images?.[0]?.imageUrl || currentImage.thumbnailUrl) || ""}
             alt={currentImage.caption || "갤러리 이미지"}
             className="max-w-full max-h-[calc(100vh-200px)] object-contain"
           />

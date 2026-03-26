@@ -40,7 +40,6 @@ export function useSupportChat({ isAdmin = false }: UseSupportChatOptions = {}) 
     isOpen,
     setActiveChat,
     setMessages,
-    prependMessages,
     openChat,
     closeChat,
     reset,

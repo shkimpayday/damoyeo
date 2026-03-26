@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef } from "react";
-import { Client, IMessage } from "@stomp/stompjs";
+import { Client, type IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { getCookie } from "@/lib/cookie";
 import { useSupportStore } from "../stores/support-store";

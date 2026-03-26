@@ -43,7 +43,7 @@ export interface MeetingListDTO {
 
 // 정모 생성 요청
 export interface MeetingCreateRequest {
-  groupId: number;
+  groupId?: number;
   title: string;
   description: string;
   address: string;

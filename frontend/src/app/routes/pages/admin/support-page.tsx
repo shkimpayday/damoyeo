@@ -84,7 +84,7 @@ function SupportChatItem({
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <Avatar
             src={chat.user?.profileImage}
-            name={chat.user?.nickname}
+            alt={chat.user?.nickname}
             size="sm"
           />
           <div className="flex-1 min-w-0">
@@ -385,7 +385,7 @@ export default function AdminSupportPage() {
               <div className="flex items-center gap-3">
                 <Avatar
                   src={selectedChat.user?.profileImage}
-                  name={selectedChat.user?.nickname}
+                  alt={selectedChat.user?.nickname}
                   size="sm"
                 />
                 <div>

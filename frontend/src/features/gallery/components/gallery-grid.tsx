@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Image as ImageIcon, Images } from "lucide-react";
+import { Plus, Images } from "lucide-react";
 import { Spinner, EmptyState } from "@/components/ui";
 import { getImageUrl } from "@/utils";
 import { useGalleryPostsInfinite, useDeleteGalleryPost } from "../hooks/use-gallery";
@@ -103,7 +103,7 @@ export function GalleryGrid({ groupId, canUpload = false }: GalleryGridProps) {
     return (
       <div className="py-8">
         <EmptyState
-          icon={<ImageIcon size={48} className="text-gray-300" />}
+          icon="🖼️"
           title="아직 사진이 없습니다"
           description={canUpload ? "첫 번째 사진을 업로드해보세요!" : undefined}
           action={

@@ -185,7 +185,7 @@ export const handlers = [
     const groupId = Number(params.groupId);
     const now = new Date();
     const upcomingMeetings = DEMO_MEETING_LIST.filter(
-      (m) => m.groupId === groupId && new Date(m.meetingDate) > now && m.status !== "CANCELLED"
+      (m) => m.groupId === groupId && new Date(m.meetingDate) > now && (m.status as string) !== "CANCELLED"
     );
     return HttpResponse.json(upcomingMeetings);
   }),
@@ -618,7 +618,7 @@ export const handlers = [
       memberCount: g.memberCount,
       maxMembers: g.maxMembers,
       status: "ACTIVE",
-      createdAt: g.createdAt || new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     }));
     return HttpResponse.json(createPageResponse(groups, page, size));
   }),

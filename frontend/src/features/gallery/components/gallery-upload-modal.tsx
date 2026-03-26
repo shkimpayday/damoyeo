@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { X, Upload, Image as ImageIcon, Trash2 } from "lucide-react";
+import { X, Upload } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { useUploadGalleryPost } from "../hooks/use-gallery";
 
