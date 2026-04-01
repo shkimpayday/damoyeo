@@ -263,6 +263,7 @@ https://github.com/{계정명}/{레포명}/settings/secrets/actions
 | `VITE_API_HOST` | `http://13.125.123.456` | 위와 동일 |
 | `VITE_KAKAO_CLIENT_ID` | 카카오 REST API 키 | [카카오 개발자 콘솔](https://developers.kakao.com/console/app) → 앱 선택 → 앱 → 플랫폼 키 → REST API 키 |
 | `KAKAO_CLIENT_ID` | 카카오 REST API 키 | `VITE_KAKAO_CLIENT_ID`와 **동일한 값** 입력 (백엔드 카카오 로그인용) |
+| `KAKAO_CLIENT_SECRET` | 카카오 Client Secret 코드 | [카카오 개발자 콘솔](https://developers.kakao.com/console/app) → 앱 선택 → **카카오 로그인** → **보안** → Client Secret 코드 (활성화 ON 시 필수) |
 
 ---
 

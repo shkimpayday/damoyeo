@@ -53,7 +53,7 @@ services:
       # Kakao OAuth Login (REST API 키)
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       # Kakao OAuth Client Secret (보안 활성화 시 필수)
-      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-}
     volumes:
       # 업로드 파일 영속 저장 (컨테이너 재시작 후에도 유지)
       - uploads_data:/app/uploads
@@ -70,7 +70,9 @@ services:
     image: ${DOCKER_USERNAME}/damoyeo-frontend:latest
     container_name: damoyeo-frontend
     ports:
-      - "80:80"
+      # 호스트 nginx(SSL)가 localhost:8888 → 컨테이너:80 으로 프록시
+      # 127.0.0.1 바인딩 → EC2 외부에서 직접 80포트 접근 차단 (보안)
+      - "127.0.0.1:8888:80"
     depends_on:
       - backend
     networks:
