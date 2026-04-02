@@ -15,6 +15,9 @@ services:
       MYSQL_DATABASE: damoyeo
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      # SSH 터널링으로 로컬 HeidiSQL 연결용 (127.0.0.1만 바인딩 → 외부 직접 접근 차단)
+      - "127.0.0.1:3306:3306"
     volumes:
       - db_data:/var/lib/mysql
     networks:
