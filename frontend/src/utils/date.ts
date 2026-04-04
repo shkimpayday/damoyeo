@@ -3,11 +3,21 @@
  */
 
 /**
+ * 서버(EC2/UTC)에서 LocalDateTime을 timezone 없이 직렬화할 때
+ * 브라우저가 로컬 시간(KST)으로 잘못 해석하지 않도록 Z를 붙여 UTC로 파싱합니다.
+ */
+const parseDate = (dateString: string): Date => {
+  if (!dateString) return new Date(NaN);
+  if (/Z|[+-]\d{2}:?\d{2}$/.test(dateString)) return new Date(dateString);
+  return new Date(dateString + "Z");
+};
+
+/**
  * ISO 날짜 문자열을 한국식 포맷으로 변환
  * @example formatDate("2024-01-15T10:30:00") => "2024.01.15"
  */
 export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
+  const date = parseDate(dateString);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -19,7 +29,7 @@ export const formatDate = (dateString: string): string => {
  * @example formatDateTime("2024-01-15T10:30:00") => "2024.01.15 10:30"
  */
 export const formatDateTime = (dateString: string): string => {
-  const date = new Date(dateString);
+  const date = parseDate(dateString);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -33,7 +43,7 @@ export const formatDateTime = (dateString: string): string => {
  * @example getRelativeTime("2024-01-15T10:30:00") => "2시간 전"
  */
 export const getRelativeTime = (dateString: string): string => {
-  const date = new Date(dateString);
+  const date = parseDate(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
@@ -57,7 +67,7 @@ export const getRelativeTime = (dateString: string): string => {
  */
 export const getDayOfWeek = (dateString: string): string => {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
-  const date = new Date(dateString);
+  const date = parseDate(dateString);
   return days[date.getDay()];
 };
 
