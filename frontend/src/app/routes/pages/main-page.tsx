@@ -92,7 +92,7 @@ function MainPage() {
                   to={`/groups/list?categoryId=${category.id}`}
                   className="flex flex-col items-center gap-2 p-2 rounded-xl hover:scale-105 transition-transform"
                 >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl overflow-hidden shadow-sm">
+                  <div className="w-full aspect-square rounded-3xl overflow-hidden shadow-sm">
                     <IconComponent className="w-full h-full" />
                   </div>
                   <span className="text-xs sm:text-sm text-gray-700 font-medium text-center leading-tight">

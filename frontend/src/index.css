@@ -21,6 +21,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #FAFAFA;
+  overflow-x: hidden; /* full-bleed 100vw 사용 시 모바일 가로 스크롤 방지 */
 }
 
 /* Hide scrollbar but keep functionality */
@@ -113,7 +114,7 @@ body {
 /* Category grid (문토 스타일: 5개씩) */
 .grid-categories {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   grid-template-columns: repeat(5, 1fr);
 }
 
