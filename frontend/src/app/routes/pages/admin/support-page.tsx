@@ -152,20 +152,19 @@ export default function AdminSupportPage() {
   const { data: waitingData, isLoading: isLoadingWaiting } = useQuery({
     queryKey: ["support", "admin", "waiting", page],
     queryFn: () => supportApi.getWaitingSupportChats(page, 20),
-    enabled: activeTab === "waiting",
-    refetchInterval: 30 * 1000, // 30초마다 갱신
+    refetchInterval: 30 * 1000,
   });
 
   const { data: myChatsData, isLoading: isLoadingMyChats } = useQuery({
     queryKey: ["support", "admin", "my-chats", page],
     queryFn: () => supportApi.getMyAssignedChats(page, 20),
-    // enabled 조건 없음 → 페이지 진입 시 즉시 fetch하여 탭 숫자 표시
+    refetchInterval: 30 * 1000,
   });
 
   const { data: allChatsData, isLoading: isLoadingAll } = useQuery({
     queryKey: ["support", "admin", "all", page],
     queryFn: () => supportApi.getAllSupportChats(page, 20),
-    // enabled 조건 없음 → 페이지 진입 시 즉시 fetch하여 탭 숫자 표시
+    refetchInterval: 30 * 1000,
   });
 
   const { data: waitingCount } = useQuery({
