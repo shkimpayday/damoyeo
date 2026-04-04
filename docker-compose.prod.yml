@@ -59,7 +59,8 @@ services:
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-}
       # KakaoPay (실제 키 없이 결제 플로우 테스트 시 true)
       KAKAO_PAY_TEST_MODE: ${KAKAO_PAY_TEST_MODE:-false}
-      KAKAO_PAY_SECRET_KEY: ${KAKAO_PAY_SECRET_KEY:-}
+      # EC2 .env에 KAKAO_PAY_SECRET_KEY가 없으면 dev 테스트 키 사용
+      KAKAO_PAY_SECRET_KEY: ${KAKAO_PAY_SECRET_KEY:-DEVAFEEE1B3FD6A4E96C218807711E379891CD14}
     volumes:
       # 업로드 파일 영속 저장 (컨테이너 재시작 후에도 유지)
       - uploads_data:/app/uploads
