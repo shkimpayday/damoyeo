@@ -26,8 +26,8 @@ export function MobileLayout() {
           linkUrl="/events/1"
           backgroundColor="#12B886"
         >
-          <span className="font-bold text-lg pt-2">🎉 신규 가입 이벤트</span>
-          <span className="ml-2 text-lg pt-2">지금 가입하면 프리미엄 30일 무료!</span>
+          <span className="font-bold text-xs sm:text-lg">🎉 신규 가입 이벤트</span>
+          <span className="ml-1 sm:ml-2 text-xs sm:text-lg">지금 가입하면 프리미엄 30일 무료!</span>
         </TopPromoBanner>
       )}
 

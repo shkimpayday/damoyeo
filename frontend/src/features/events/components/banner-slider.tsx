@@ -52,7 +52,7 @@ export function BannerSlider({
             to={banner.linkUrl}
             className="w-full flex-shrink-0"
           >
-            <div className="relative aspect-5/1">
+            <div className="relative aspect-2/1 sm:aspect-3/1 md:aspect-5/1">
               <img
                 src={banner.imageUrl}
                 alt={banner.title}
