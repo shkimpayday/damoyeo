@@ -101,7 +101,7 @@ function SearchPage() {
   const totalCount = data?.pages[0]?.totalCount ?? 0;
 
   // 모든 페이지의 모임 목록을 평탄화
-  const allGroups = data?.pages.flatMap((page) => page.dtoList) ?? [];
+  const allGroups = data?.pages.flatMap((page) => page.dtoList ?? []) ?? [];
 
   return (
     <div className="p-4">
