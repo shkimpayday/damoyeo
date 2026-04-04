@@ -101,11 +101,19 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
         content: "프로필이 수정되었습니다.",
       });
       setShowResultModal(true);
-    } catch {
-      setResultContent({
-        title: "수정 실패",
-        content: "프로필 수정에 실패했습니다.",
-      });
+    } catch (error) {
+      const status = (error as { response?: { status?: number } }).response?.status;
+      if (status === 413) {
+        setResultContent({
+          title: "파일 크기 초과",
+          content: "이미지 파일이 너무 큽니다. 10MB 이하의 이미지를 사용해주세요.",
+        });
+      } else {
+        setResultContent({
+          title: "수정 실패",
+          content: "프로필 수정에 실패했습니다.",
+        });
+      }
       setShowResultModal(true);
     }
   };
