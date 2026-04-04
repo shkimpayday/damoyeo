@@ -5,9 +5,13 @@ import com.damoyeo.api.domain.category.repository.CategoryRepository;
 import com.damoyeo.api.domain.event.entity.Event;
 import com.damoyeo.api.domain.event.entity.EventType;
 import com.damoyeo.api.domain.event.repository.EventRepository;
+import com.damoyeo.api.domain.member.entity.Member;
+import com.damoyeo.api.domain.member.entity.MemberRole;
+import com.damoyeo.api.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -61,6 +65,12 @@ public class DataInitializer implements CommandLineRunner {
     private final EventRepository eventRepository;
 
     /**
+     * 회원 저장소 / 비밀번호 인코더 (데모 계정 생성용)
+     */
+    private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    /**
      * 애플리케이션 시작 후 실행되는 메서드
      *
      * @param args 커맨드라인 인자 (사용하지 않음)
@@ -80,6 +90,11 @@ public class DataInitializer implements CommandLineRunner {
         // 이벤트 테이블이 비어있을 때만 초기화
         if (eventRepository.count() == 0) {
             initEvents();
+        }
+
+        // 데모 계정이 없을 때만 생성
+        if (memberRepository.findByEmail("admin@damoyeo.store").isEmpty()) {
+            initDemoAccounts();
         }
     }
 
@@ -326,5 +341,41 @@ public class DataInitializer implements CommandLineRunner {
         // 모든 이벤트를 한 번에 저장
         eventRepository.saveAll(events);
         log.info("Events initialized: {} events created", events.size());
+    }
+
+    /**
+     * 데모 계정 초기 생성
+     *
+     * 포트폴리오 시연용 계정 2개를 생성합니다.
+     * - 관리자: admin@damoyeo.store / Demo1234!
+     * - 일반 사용자: demo@damoyeo.store / Demo1234!
+     *
+     * 이미 계정이 존재하면 생성하지 않습니다.
+     */
+    private void initDemoAccounts() {
+        // 관리자 계정
+        Member admin = Member.builder()
+                .email("admin@damoyeo.store")
+                .password(passwordEncoder.encode("admin"))
+                .nickname("관리자")
+                .introduction("다모여 관리자 계정입니다.")
+                .social(false)
+                .build();
+        admin.addRole(MemberRole.USER);
+        admin.addRole(MemberRole.ADMIN);
+        memberRepository.save(admin);
+
+        // 일반 사용자 계정
+        Member demo = Member.builder()
+                .email("demo@damoyeo.store")
+                .password(passwordEncoder.encode("admin"))
+                .nickname("데모유저")
+                .introduction("다모여 데모 계정입니다.")
+                .social(false)
+                .build();
+        demo.addRole(MemberRole.USER);
+        memberRepository.save(demo);
+
+        log.info("Demo accounts initialized: admin@damoyeo.store, demo@damoyeo.store (password: Demo1234!)");
     }
 }
