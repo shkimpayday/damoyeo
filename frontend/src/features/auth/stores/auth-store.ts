@@ -69,12 +69,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   updateProfile: (nickname: string, profileImage: string) => {
-    set((state) => ({
-      member: {
-        ...state.member,
-        nickname,
-        profileImage,
-      },
-    }));
+    set((state) => {
+      const updated = { ...state.member, nickname, profileImage };
+      setCookie("member", JSON.stringify(updated), 1);
+      return { member: updated };
+    });
   },
 }));
