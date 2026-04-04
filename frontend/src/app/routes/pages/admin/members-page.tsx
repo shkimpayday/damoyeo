@@ -542,7 +542,7 @@ export function MembersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {data?.dtoList.map((member) => (
+                {(data?.dtoList ?? []).map((member) => (
                   <tr key={member.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
