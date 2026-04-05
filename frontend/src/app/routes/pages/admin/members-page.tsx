@@ -516,7 +516,7 @@ export function MembersPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-            <table className="w-full min-w-160">
+            <table className="w-full min-w-200">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -545,7 +545,7 @@ export function MembersPage() {
               <tbody className="divide-y divide-gray-100">
                 {(data?.dtoList ?? []).map((member) => (
                   <tr key={member.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <Avatar
                           src={member.profileImage || undefined}
@@ -566,26 +566,26 @@ export function MembersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                       {member.email}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-1">
                         {member.roleNames.map((role) => (
                           <RoleBadge key={role} role={role} />
                         ))}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <PremiumStatusBadge member={member} />
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                       {member.groupCount}개
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                       {new Date(member.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-2">
                         {/* 프리미엄 관리 버튼 */}
                         <button
