@@ -356,7 +356,7 @@ public class DataInitializer implements CommandLineRunner {
         // 관리자 계정
         Member admin = Member.builder()
                 .email("admin@damoyeo.store")
-                .password(passwordEncoder.encode("admin"))
+                .password(passwordEncoder.encode("admin1234"))
                 .nickname("관리자")
                 .introduction("다모여 관리자 계정입니다.")
                 .social(false)
@@ -368,7 +368,7 @@ public class DataInitializer implements CommandLineRunner {
         // 일반 사용자 계정
         Member demo = Member.builder()
                 .email("demo@damoyeo.store")
-                .password(passwordEncoder.encode("admin"))
+                .password(passwordEncoder.encode("demo1234"))
                 .nickname("데모유저")
                 .introduction("다모여 데모 계정입니다.")
                 .social(false)
@@ -376,6 +376,6 @@ public class DataInitializer implements CommandLineRunner {
         demo.addRole(MemberRole.USER);
         memberRepository.save(demo);
 
-        log.info("Demo accounts initialized: admin@damoyeo.store, demo@damoyeo.store (password: Demo1234!)");
+        log.info("Demo accounts initialized: admin@damoyeo.store (admin1234), demo@damoyeo.store (demo1234)");
     }
 }
