@@ -58,29 +58,51 @@ export function AdminLayout() {
     <div className="min-h-screen bg-gray-100">
       {/* 상단 헤더 */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="flex items-center justify-between px-6 h-16">
-          <div className="flex items-center gap-4">
-            <Link to="/admin/dashboard" className="text-xl font-bold text-primary-600">
-              다모여 관리자
-            </Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              {loginState.nickname} ({loginState.email})
+        <div className="flex items-center justify-between px-4 md:px-6 h-14 md:h-16">
+          <Link to="/admin/dashboard" className="text-lg md:text-xl font-bold text-primary-600">
+            다모여 관리자
+          </Link>
+          <div className="flex items-center gap-2 md:gap-4">
+            <span className="hidden sm:block text-sm text-gray-600">
+              {loginState.nickname}
             </span>
             <Link
               to="/"
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap"
             >
-              사이트로 이동 →
+              사이트 →
             </Link>
           </div>
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-64px)] overflow-hidden">
-        {/* 사이드바 */}
-        <aside className="w-64 bg-white shadow-sm border-r border-gray-200 shrink-0">
+      {/* 모바일 탭 내비게이션 */}
+      <nav className="md:hidden bg-white border-b border-gray-200 overflow-x-auto">
+        <ul className="flex">
+          {ADMIN_MENUS.map((menu) => {
+            const isActive = location.pathname === menu.path;
+            return (
+              <li key={menu.path} className="shrink-0">
+                <Link
+                  to={menu.path}
+                  className={`flex flex-col items-center gap-0.5 px-4 py-2.5 text-xs transition-colors border-b-2 ${
+                    isActive
+                      ? "border-primary-500 text-primary-600 font-medium"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <span className="text-base">{menu.icon}</span>
+                  <span className="whitespace-nowrap">{menu.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <div className="flex h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] overflow-hidden">
+        {/* 사이드바 (데스크톱만) */}
+        <aside className="hidden md:block w-64 bg-white shadow-sm border-r border-gray-200 shrink-0">
           <nav className="p-4">
             <ul className="space-y-1">
               {ADMIN_MENUS.map((menu) => {
@@ -108,7 +130,7 @@ export function AdminLayout() {
         {/* 메인 콘텐츠 */}
         <main
           className={`flex-1 overflow-auto ${
-            location.pathname === "/admin/support" ? "p-0" : "p-6"
+            location.pathname === "/admin/support" ? "p-0" : "p-4 md:p-6"
           }`}
         >
           <Outlet />
