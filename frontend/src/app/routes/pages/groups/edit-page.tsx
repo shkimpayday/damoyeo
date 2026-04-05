@@ -59,8 +59,8 @@ function GroupEditPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setModalContent({ title: "파일 용량 초과", content: "이미지 파일은 5MB 이하만 업로드 가능합니다." });
+      if (file.size > 20 * 1024 * 1024) {
+        setModalContent({ title: "파일 용량 초과", content: "이미지 파일은 20MB 이하만 업로드 가능합니다." });
         setShowModal(true);
         e.target.value = "";
         return;
@@ -152,7 +152,7 @@ function GroupEditPage() {
           return;
         }
         if (error.response?.status === 413) {
-          setModalContent({ title: "파일 용량 초과", content: "이미지 파일이 너무 큽니다. 5MB 이하의 이미지를 사용해주세요." });
+          setModalContent({ title: "파일 용량 초과", content: "이미지 파일이 너무 큽니다. 20MB 이하의 이미지를 사용해주세요." });
           setShowModal(true);
           return;
         }

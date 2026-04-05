@@ -28,7 +28,7 @@ interface GalleryUploadModalProps {
 }
 
 const MAX_FILES = 10;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 export function GalleryUploadModal({
@@ -58,7 +58,7 @@ export function GalleryUploadModal({
 
       // 크기 확인
       if (file.size > MAX_FILE_SIZE) {
-        setError("파일 크기는 10MB 이하여야 합니다.");
+        setError("파일 크기는 20MB 이하여야 합니다.");
         continue;
       }
 
@@ -159,7 +159,7 @@ export function GalleryUploadModal({
       onClose();
     } catch (err) {
       if (err instanceof AxiosError && err.response?.status === 413) {
-        setError("파일 크기가 너무 큽니다. 10MB 이하의 이미지를 사용해주세요.");
+        setError("파일 크기가 너무 큽니다. 20MB 이하의 이미지를 사용해주세요.");
       } else {
         setError("업로드에 실패했습니다. 다시 시도해주세요.");
       }
@@ -213,7 +213,7 @@ export function GalleryUploadModal({
               클릭하거나 드래그하여 업로드
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              JPG, PNG, GIF, WebP (최대 10MB, {MAX_FILES}개)
+              JPG, PNG, GIF, WebP (최대 20MB, {MAX_FILES}개)
             </p>
           </div>
 
