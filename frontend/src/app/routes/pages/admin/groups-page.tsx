@@ -129,7 +129,7 @@ export function GroupsPage() {
 
       {/* 검색 및 필터 */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
-        <form onSubmit={handleSearch} className="flex gap-4">
+        <form onSubmit={handleSearch} className="flex flex-col gap-2 sm:flex-row sm:gap-4">
           <input
             type="text"
             value={searchInput}
@@ -137,25 +137,27 @@ export function GroupsPage() {
             placeholder="모임 이름으로 검색"
             className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">전체 상태</option>
-            <option value="ACTIVE">활성</option>
-            <option value="INACTIVE">비활성</option>
-            <option value="DELETED">삭제됨</option>
-          </select>
-          <button
-            type="submit"
-            className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
-          >
-            검색
-          </button>
+          <div className="flex gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="flex-1 sm:flex-none px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">전체 상태</option>
+              <option value="ACTIVE">활성</option>
+              <option value="INACTIVE">비활성</option>
+              <option value="DELETED">삭제됨</option>
+            </select>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 whitespace-nowrap"
+            >
+              검색
+            </button>
+          </div>
         </form>
       </div>
 
@@ -176,7 +178,8 @@ export function GroupsPage() {
           </div>
         ) : (
           <>
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-160">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -267,6 +270,7 @@ export function GroupsPage() {
                 )}
               </tbody>
             </table>
+            </div>
 
             {/* 페이지네이션 */}
             {data && data.totalPage > 1 && (
