@@ -55,7 +55,7 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
       {/* 상단 헤더 */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="flex items-center justify-between px-4 md:px-6 h-14 md:h-16">
@@ -100,7 +100,7 @@ export function AdminLayout() {
         </ul>
       </nav>
 
-      <div className="flex h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* 사이드바 (데스크톱만) */}
         <aside className="hidden md:block w-64 bg-white shadow-sm border-r border-gray-200 shrink-0">
           <nav className="p-4">
