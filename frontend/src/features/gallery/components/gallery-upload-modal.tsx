@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { X, Upload } from "lucide-react";
+import { AxiosError } from "axios";
 import { Spinner } from "@/components/ui";
 import { useUploadGalleryPost } from "../hooks/use-gallery";
 
@@ -157,7 +158,11 @@ export function GalleryUploadModal({
       onSuccess?.();
       onClose();
     } catch (err) {
-      setError("업로드에 실패했습니다. 다시 시도해주세요.");
+      if (err instanceof AxiosError && err.response?.status === 413) {
+        setError("파일 크기가 너무 큽니다. 10MB 이하의 이미지를 사용해주세요.");
+      } else {
+        setError("업로드에 실패했습니다. 다시 시도해주세요.");
+      }
     }
   };
 

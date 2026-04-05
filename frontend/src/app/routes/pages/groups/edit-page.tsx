@@ -59,6 +59,12 @@ function GroupEditPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setModalContent({ title: "파일 용량 초과", content: "이미지 파일은 5MB 이하만 업로드 가능합니다." });
+        setShowModal(true);
+        e.target.value = "";
+        return;
+      }
       setCoverImage(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -140,10 +146,16 @@ function GroupEditPage() {
       setModalContent({ title: "수정 완료", content: "모임 정보가 수정되었습니다!" });
       setShowModal(true);
     } catch (error) {
-      // 403 에러 처리 (인원 제한)
-      if (error instanceof AxiosError && error.response?.status === 403) {
-        setShowLimitModal(true);
-        return;
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 403) {
+          setShowLimitModal(true);
+          return;
+        }
+        if (error.response?.status === 413) {
+          setModalContent({ title: "파일 용량 초과", content: "이미지 파일이 너무 큽니다. 5MB 이하의 이미지를 사용해주세요." });
+          setShowModal(true);
+          return;
+        }
       }
       setModalContent({ title: "수정 실패", content: "모임 수정에 실패했습니다." });
       setShowModal(true);
