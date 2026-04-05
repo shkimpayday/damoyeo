@@ -22,6 +22,8 @@ export interface MeetingDTO {
   fee: number;
   status: MeetingStatus;
   myStatus?: AttendStatus | null;
+  /** 모임 멤버십 여부 (true: 멤버, false: 비멤버, null/undefined: 비로그인) */
+  isGroupMember?: boolean | null;
   /** 현재 사용자의 정모 수정/취소 권한 여부 (생성자 또는 OWNER/MANAGER) */
   canEdit?: boolean;
   createdBy: MemberSummary;

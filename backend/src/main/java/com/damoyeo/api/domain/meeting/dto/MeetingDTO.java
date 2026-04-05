@@ -176,6 +176,15 @@ public class MeetingDTO {
     private String myStatus;  // ATTENDING, MAYBE, NOT_ATTENDING, null
 
     /**
+     * 현재 로그인한 사용자의 모임 멤버십 여부
+     *
+     * - true: 모임 멤버 (참석 신청 가능)
+     * - false: 비멤버 (모임 가입 필요)
+     * - null: 비로그인
+     */
+    private Boolean isGroupMember;
+
+    /**
      * 현재 로그인한 사용자의 정모 수정/취소 권한 여부
      *
      * [권한이 있는 경우]

@@ -133,6 +133,17 @@ function MeetingDetailPage() {
         </div>
       </div>
 
+      {/* 비멤버 안내 배너 */}
+      {isLoggedIn && meeting.isGroupMember === false && (
+        <div className="mx-4 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3">
+          <span className="text-2xl">👋</span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-800">모임 미가입 상태입니다</p>
+            <p className="text-xs text-amber-600 mt-0.5">모임에 가입하면 이 정모에 참석할 수 있어요</p>
+          </div>
+        </div>
+      )}
+
       {/* Info Cards */}
       <div className="p-4 space-y-3">
         {/* 일시 카드 */}
@@ -251,44 +262,56 @@ function MeetingDetailPage() {
       {!isPastMeeting && meeting.status !== "CANCELLED" && (
         <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg">
           <div className="flex gap-3 max-w-lg mx-auto">
-            {/* 수정 버튼은 권한이 있는 경우에만 표시 (생성자 또는 OWNER/MANAGER) */}
-            {meeting.canEdit && (
+            {/* 비멤버: 모임 가입 유도 */}
+            {meeting.isGroupMember === false ? (
               <Link
-                to={`/meetings/${meeting.id}/edit`}
-                className="px-5 py-3.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                to={`/groups/${meeting.groupId}`}
+                className="flex-1 py-3.5 bg-primary-500 text-white rounded-xl font-semibold text-center hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25"
               >
-                수정
+                모임 가입하고 참석하기
               </Link>
-            )}
-
-            {/* 참석자 전용 채팅 버튼 */}
-            {meeting.myStatus === "ATTENDING" && (
-              <Link
-                to={`/meetings/${meeting.id}/chat`}
-                className="px-4 py-3.5 bg-primary-50 rounded-xl flex items-center justify-center hover:bg-primary-100 transition-colors"
-                title="참석자 채팅"
-              >
-                <MessageCircle size={22} className="text-primary-500" />
-              </Link>
-            )}
-
-            {meeting.myStatus === "ATTENDING" ? (
-              <button
-                onClick={handleCancelAttend}
-                className="flex-1 py-3.5 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:bg-red-50 transition-colors"
-              >
-                참석 취소
-              </button>
             ) : (
-              <button
-                onClick={handleAttend}
-                disabled={meeting.currentAttendees >= meeting.maxAttendees}
-                className="flex-1 py-3.5 bg-primary-500 text-white rounded-xl font-semibold disabled:bg-gray-300 hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25"
-              >
-                {meeting.currentAttendees >= meeting.maxAttendees
-                  ? "정원 마감"
-                  : "참석하기"}
-              </button>
+              <>
+                {/* 수정 버튼은 권한이 있는 경우에만 표시 (생성자 또는 OWNER/MANAGER) */}
+                {meeting.canEdit && (
+                  <Link
+                    to={`/meetings/${meeting.id}/edit`}
+                    className="px-5 py-3.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    수정
+                  </Link>
+                )}
+
+                {/* 참석자 전용 채팅 버튼 */}
+                {meeting.myStatus === "ATTENDING" && (
+                  <Link
+                    to={`/meetings/${meeting.id}/chat`}
+                    className="px-4 py-3.5 bg-primary-50 rounded-xl flex items-center justify-center hover:bg-primary-100 transition-colors"
+                    title="참석자 채팅"
+                  >
+                    <MessageCircle size={22} className="text-primary-500" />
+                  </Link>
+                )}
+
+                {meeting.myStatus === "ATTENDING" ? (
+                  <button
+                    onClick={handleCancelAttend}
+                    className="flex-1 py-3.5 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:bg-red-50 transition-colors"
+                  >
+                    참석 취소
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAttend}
+                    disabled={meeting.currentAttendees >= meeting.maxAttendees}
+                    className="flex-1 py-3.5 bg-primary-500 text-white rounded-xl font-semibold disabled:bg-gray-300 hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25"
+                  >
+                    {meeting.currentAttendees >= meeting.maxAttendees
+                      ? "정원 마감"
+                      : "참석하기"}
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

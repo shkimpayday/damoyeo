@@ -164,15 +164,6 @@ public class MeetingServiceImpl implements MeetingService {
         Meeting meeting = meetingRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> CustomException.notFound("정모를 찾을 수 없습니다."));
 
-        // 비로그인 사용자는 정모 상세를 볼 수 없음
-        if (email == null) {
-            throw CustomException.forbidden("모임 멤버만 정모를 볼 수 있습니다. 로그인해주세요.");
-        }
-
-        // 모임 멤버인지 확인
-        Member member = getMemberByEmail(email);
-        checkGroupMember(meeting.getGroup().getId(), member.getId());
-
         return entityToDTO(meeting, email);
     }
 
@@ -573,7 +564,14 @@ public class MeetingServiceImpl implements MeetingService {
         if (email != null) {
             Member member = memberRepository.findByEmail(email).orElse(null);
             if (member != null) {
-                // myStatus 설정
+                // 모임 멤버십 확인
+                boolean isGroupMember = groupMemberRepository
+                        .findByGroupIdAndMemberId(meeting.getGroup().getId(), member.getId())
+                        .map(gm -> gm.getStatus() == JoinStatus.APPROVED)
+                        .orElse(false);
+                builder.isGroupMember(isGroupMember);
+
+                // myStatus 설정 (멤버인 경우에만 의미 있음)
                 attendeeRepository.findByMeetingIdAndMemberId(meeting.getId(), member.getId())
                         .ifPresent(a -> builder.myStatus(a.getStatus().name()));
 
