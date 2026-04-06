@@ -847,8 +847,8 @@ export default function EventsPage() {
   return (
     <div>
       {/* 페이지 헤더 */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-800">이벤트/배너 관리</h1>
           <p className="text-gray-500 mt-1 text-sm">
             메인 화면의 배너 슬라이더를 관리합니다
@@ -862,7 +862,7 @@ export default function EventsPage() {
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium"
+          className="shrink-0 flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium whitespace-nowrap"
         >
           <Plus size={16} />
           새 이벤트
@@ -884,7 +884,8 @@ export default function EventsPage() {
             <Spinner size="md" />
           </div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-200">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -914,7 +915,7 @@ export default function EventsPage() {
                   className="hover:bg-gray-50 transition-colors"
                 >
                   {/* 이벤트 정보 */}
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
                       <div className="w-20 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                         <img
@@ -952,7 +953,7 @@ export default function EventsPage() {
                   </td>
 
                   {/* 타입 */}
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <TypeBadge type={event.type} />
                   </td>
 
@@ -963,14 +964,14 @@ export default function EventsPage() {
                   </td>
 
                   {/* 노출 순서 */}
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-6 py-4 text-center whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
                       {event.displayOrder}
                     </span>
                   </td>
 
                   {/* 상태 - 실제 배너 노출 여부 (isActive + 날짜 범위 모두 체크) */}
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {(() => {
                       const { label, className } = getBannerDisplayStatus(event);
                       return (
@@ -982,7 +983,7 @@ export default function EventsPage() {
                   </td>
 
                   {/* 액션 버튼 */}
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center justify-end gap-2">
                       {/* 수정 */}
                       <button
@@ -1047,6 +1048,7 @@ export default function EventsPage() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

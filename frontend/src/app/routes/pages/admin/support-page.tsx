@@ -249,8 +249,8 @@ export default function AdminSupportPage() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* 왼쪽: 상담 목록 */}
-      <div className="w-96 border-r border-gray-200 flex flex-col bg-white">
+      {/* 왼쪽: 상담 목록 (모바일: 상담 선택 시 숨김) */}
+      <div className={`${selectedChat ? "hidden md:flex" : "flex"} flex-col w-full md:w-96 border-r border-gray-200 bg-white shrink-0`}>
         {/* 헤더 */}
         <div className="px-4 py-3 border-b border-gray-200">
           <div className="flex items-center justify-between mb-3">
@@ -375,13 +375,21 @@ export default function AdminSupportPage() {
         </div>
       </div>
 
-      {/* 오른쪽: 채팅창 */}
-      <div className="flex-1 flex flex-col">
+      {/* 오른쪽: 채팅창 (모바일: 상담 선택 시만 표시) */}
+      <div className={`${selectedChat ? "flex" : "hidden md:flex"} flex-1 flex-col`}>
         {selectedChat ? (
           <>
             {/* 상담 정보 헤더 */}
             <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between">
               <div className="flex items-center gap-3">
+                {/* 모바일: 목록으로 돌아가기 버튼 */}
+                <button
+                  onClick={() => setSelectedChat(null)}
+                  className="md:hidden p-1 -ml-1 text-gray-500 hover:text-gray-700"
+                  aria-label="목록으로"
+                >
+                  ←
+                </button>
                 <Avatar
                   src={selectedChat.user?.profileImage}
                   alt={selectedChat.user?.nickname}
