@@ -248,8 +248,8 @@ function MeetingDetailPage() {
         </div>
       </div>
 
-      {/* Bottom Action Button - 지난 정모나 취소된 정모는 버튼 숨김 */}
-      {!isPastMeeting && meeting.status !== "CANCELLED" && (
+      {/* Bottom Action Button - 완료/취소된 정모는 버튼 숨김 */}
+      {meeting.status !== "COMPLETED" && meeting.status !== "CANCELLED" && (
         <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-lg">
           <div className="flex gap-3 max-w-lg mx-auto">
             {/* 비멤버: 모임 가입 유도 */}
