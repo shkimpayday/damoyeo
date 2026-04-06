@@ -1293,8 +1293,6 @@ export function createPageResponse<T>(
     prev: page > 1,
     next: page < totalPage,
     totalCount: items.length,
-    prevPage: page - 1,
-    nextPage: page + 1,
     totalPage,
     current: page,
   };

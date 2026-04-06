@@ -76,18 +76,6 @@ public class PageResponseDTO<E> {
     private int totalCount;
 
     /**
-     * 이전 페이지 그룹의 마지막 페이지 번호
-     * 예: 현재 11~20 그룹이면 prevPage=10
-     */
-    private int prevPage;
-
-    /**
-     * 다음 페이지 그룹의 첫 페이지 번호
-     * 예: 현재 1~10 그룹이면 nextPage=11
-     */
-    private int nextPage;
-
-    /**
      * 전체 페이지 수
      */
     private int totalPage;
@@ -128,6 +116,7 @@ public class PageResponseDTO<E> {
     public PageResponseDTO(PageRequestDTO pageRequestDTO, List<E> dtoList, int totalCount) {
         // 데이터가 없으면 아무것도 설정하지 않음
         if (totalCount <= 0) {
+            this.dtoList = List.of();
             return;
         }
 
@@ -158,10 +147,6 @@ public class PageResponseDTO<E> {
         // 페이지 번호 목록 생성 [start ~ end]
         // 예: start=1, end=10 → [1,2,3,4,5,6,7,8,9,10]
         this.pageNumList = IntStream.rangeClosed(start, end).boxed().collect(Collectors.toList());
-
-        // 이전/다음 페이지 그룹으로 이동할 페이지 번호
-        this.prevPage = prev ? start - 1 : 0;
-        this.nextPage = next ? end + 1 : 0;
 
         // 전체 페이지 수와 현재 페이지
         this.totalPage = last;

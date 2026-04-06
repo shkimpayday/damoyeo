@@ -75,8 +75,6 @@ export interface GalleryPageResponse {
   prev: boolean;
   next: boolean;
   totalCount: number;
-  prevPage: number;
-  nextPage: number;
   totalPage: number;
   current: number;
 }

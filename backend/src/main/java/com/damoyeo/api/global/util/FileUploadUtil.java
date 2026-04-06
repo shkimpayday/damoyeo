@@ -83,6 +83,23 @@ public class FileUploadUtil {
     }
 
     /**
+     * 게시판 이미지 업로드
+     *
+     * <p>저장 경로: /uploads/board/{groupId}/{UUID}.{확장자}</p>
+     *
+     * @param file    업로드할 파일
+     * @param groupId 모임 ID (폴더 구분용)
+     * @return 저장된 파일의 URL 경로
+     */
+    public String uploadBoardImage(MultipartFile file, Long groupId) {
+        validateImageFile(file);
+
+        String subDir = "board/" + groupId;
+        String savedFileName = saveFile(file, subDir);
+        return "/uploads/" + subDir + "/" + savedFileName;
+    }
+
+    /**
      * 파일 저장
      *
      * @param file 업로드할 파일

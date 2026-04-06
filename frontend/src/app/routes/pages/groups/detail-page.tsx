@@ -9,7 +9,7 @@ import { Avatar, EmptyState, Spinner, ResultModal } from "@/components/ui";
 import { formatDateTime, getDayOfWeek, getRelativeTime } from "@/utils/date";
 import type { GroupMemberDTO } from "@/features/groups/types";
 
-type TabType = "info" | "meetings" | "gallery" | "chat" | "members";
+type TabType = "info" | "meetings" | "board" | "gallery" | "chat" | "members";
 
 function GroupDetailPage() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -33,6 +33,10 @@ function GroupDetailPage() {
     }
     if (tab === "gallery") {
       navigate(`/groups/${groupId}/gallery`);
+      return;
+    }
+    if (tab === "board") {
+      navigate(`/groups/${groupId}/board`);
       return;
     }
 
@@ -132,6 +136,7 @@ function GroupDetailPage() {
     { key: "info", label: "홈" },
     { key: "meetings", label: "정모", count: totalMeetingsCount },
     { key: "members", label: "멤버", count: members?.length },
+    ...(group.myRole ? [{ key: "board" as TabType, label: "게시판" }] : []),
     ...(group.myRole ? [{ key: "gallery" as TabType, label: "갤러리" }] : []),
     ...(group.myRole ? [{ key: "chat" as TabType, label: "채팅" }] : []),
   ];
@@ -142,14 +147,6 @@ function GroupDetailPage() {
   ) || [];
   const regularMembers = members?.filter((m) => m.role === "MEMBER") || [];
   const displayedMembers = showAllMembers ? regularMembers : regularMembers.slice(0, 10);
-
-  // Check if member joined recently (within 7 days)
-  const isNewMember = (joinedAt: string) => {
-    const joinDate = new Date(joinedAt);
-    const now = new Date();
-    const diffDays = (now.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24);
-    return diffDays <= 7;
-  };
 
   const memberProgress = Math.min((group.memberCount / group.maxMembers) * 100, 100);
 
@@ -514,7 +511,7 @@ function GroupDetailPage() {
                   <MemberRow
                     key={member.id}
                     member={member}
-                    isNew={isNewMember(member.joinedAt)}
+                    isNew={member.isNewMember}
                     onClickProfile={() => setSelectedMemberId(member.member.id)}
                   />
                 ))}
@@ -531,7 +528,7 @@ function GroupDetailPage() {
                   <MemberRow
                     key={member.id}
                     member={member}
-                    isNew={isNewMember(member.joinedAt)}
+                    isNew={member.isNewMember}
                     onClickProfile={() => setSelectedMemberId(member.member.id)}
                   />
                 ))}

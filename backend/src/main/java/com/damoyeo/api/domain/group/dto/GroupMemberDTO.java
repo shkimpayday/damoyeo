@@ -72,4 +72,12 @@ public class GroupMemberDTO {
      * 멤버 목록을 가입일순으로 정렬할 때 사용합니다.
      */
     private LocalDateTime joinedAt;
+
+    /**
+     * 신규 멤버 여부 (가입 후 7일 이내)
+     *
+     * 프론트엔드에서 "NEW" 뱃지를 표시할 때 사용합니다.
+     * 날짜 계산은 서버에서 수행하여 시간대(timezone) 일관성을 보장합니다.
+     */
+    private boolean isNewMember;
 }

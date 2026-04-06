@@ -47,6 +47,9 @@ const ChatPage = lazy(
 const GalleryPage = lazy(
   () => import("@/app/routes/pages/groups/gallery-page")
 );
+const BoardPage = lazy(
+  () => import("@/app/routes/pages/groups/board-page")
+);
 
 // Meeting pages
 const MeetingListPage = lazy(
@@ -187,6 +190,10 @@ export const router = createBrowserRouter([
           {
             path: "groups/:groupId/gallery",
             element: withSuspense(GalleryPage),
+          },
+          {
+            path: "groups/:groupId/board",
+            element: withSuspense(BoardPage),
           },
 
           // Meetings

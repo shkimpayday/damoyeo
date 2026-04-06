@@ -125,6 +125,8 @@ export interface GroupMemberDTO {
   member: MemberSummary;
   role: GroupRole;
   joinedAt: string;
+  /** 가입 후 7일 이내 여부 — 서버에서 계산하여 제공 */
+  isNewMember: boolean;
 }
 
 // 멤버 역할 변경 요청
@@ -139,8 +141,6 @@ export interface PageResponseDTO<T> {
   prev: boolean;
   next: boolean;
   totalCount: number;
-  prevPage: number;
-  nextPage: number;
   totalPage: number;
   current: number;
 }

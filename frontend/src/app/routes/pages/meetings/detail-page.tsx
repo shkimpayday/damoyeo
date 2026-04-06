@@ -74,16 +74,6 @@ function MeetingDetailPage() {
     }
   };
 
-  // 날짜 기반으로 지난 정모인지 판단
-  const isPastMeeting = new Date(meeting.meetingDate) <= new Date();
-
-  // 실제 표시할 상태 (날짜 기반)
-  const displayStatus = meeting.status === "CANCELLED"
-    ? "CANCELLED"
-    : isPastMeeting
-      ? "COMPLETED"
-      : meeting.status;
-
   const statusColors = {
     SCHEDULED: "bg-blue-100 text-blue-700",
     ONGOING: "bg-green-100 text-green-700",
@@ -124,10 +114,10 @@ function MeetingDetailPage() {
             </h1>
             <span
               className={`shrink-0 px-3 py-1 rounded-full text-sm font-semibold ${
-                statusColors[displayStatus]
+                statusColors[meeting.status]
               }`}
             >
-              {statusLabels[displayStatus]}
+              {statusLabels[meeting.status]}
             </span>
           </div>
         </div>

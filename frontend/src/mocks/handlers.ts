@@ -464,8 +464,6 @@ export const handlers = [
       prev: page > 1,
       next: page < totalPage,
       totalCount,
-      prevPage: page - 1,
-      nextPage: page + 1,
       totalPage,
       current: page,
     });
@@ -658,8 +656,6 @@ export const handlers = [
       prev: false,
       next: false,
       totalCount: 0,
-      prevPage: 0,
-      nextPage: 0,
       totalPage: 0,
       current: 1,
     });
@@ -686,8 +682,6 @@ export const handlers = [
       prev: false,
       next: false,
       totalCount: 0,
-      prevPage: 0,
-      nextPage: 0,
       totalPage: 0,
       current: 1,
     });
@@ -759,6 +753,158 @@ export const handlers = [
 
   // 댓글 삭제
   http.delete("*/api/gallery/comments/:commentId", async () => {
+    await delay(DELAY_MS);
+    return HttpResponse.json({ message: "댓글이 삭제되었습니다." });
+  }),
+
+  // ========== 게시판 API ==========
+  // 게시글 목록 (무한 스크롤 - page 0부터 시작)
+  http.get("*/api/groups/:groupId/board", async ({ request }) => {
+    await delay(DELAY_MS);
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get("page")) || 0;
+    const size = Number(url.searchParams.get("size")) || 10;
+    const category = url.searchParams.get("category");
+
+    // 데모 게시글 데이터
+    const demoPosts = [
+      {
+        id: 1, groupId: 1, category: "NOTICE", title: "📢 모임 이용 안내",
+        content: "안녕하세요! 모임에 가입해주셔서 감사합니다. 활동 규칙을 꼭 확인해 주세요.",
+        images: [], imageCount: 0, thumbnailUrl: null,
+        author: DEMO_MEMBERS[0], likeCount: 12, commentCount: 3,
+        liked: false, isPinned: true, canDelete: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+      },
+      {
+        id: 2, groupId: 1, category: "GREETING", title: "안녕하세요~ 새로 가입했어요!",
+        content: "반갑습니다! 저는 운동을 좋아하는 30대 직장인입니다. 잘 부탁드립니다 😊",
+        images: [
+          { id: 1, imageUrl: `https://picsum.photos/seed/board2/400/300` },
+        ],
+        imageCount: 1, thumbnailUrl: `https://picsum.photos/seed/board2/400/300`,
+        author: DEMO_MEMBERS[1], likeCount: 8, commentCount: 5,
+        liked: true, isPinned: false, canDelete: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+      },
+      {
+        id: 3, groupId: 1, category: "REVIEW", title: "지난 정모 후기 🏃",
+        content: "어제 한강에서 달리기 정말 즐거웠습니다! 다음에도 또 참여하고 싶어요. 모두 고생하셨습니다.",
+        images: [
+          { id: 2, imageUrl: `https://picsum.photos/seed/board3a/400/300` },
+          { id: 3, imageUrl: `https://picsum.photos/seed/board3b/400/300` },
+          { id: 4, imageUrl: `https://picsum.photos/seed/board3c/400/300` },
+        ],
+        imageCount: 3, thumbnailUrl: `https://picsum.photos/seed/board3a/400/300`,
+        author: DEMO_MEMBERS[2], likeCount: 15, commentCount: 7,
+        liked: false, isPinned: false, canDelete: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+      },
+      {
+        id: 4, groupId: 1, category: "FREE", title: "다음 정모 장소 추천 받습니다",
+        content: "다음 주 정모 장소를 어디로 할까요? 한강공원, 올림픽공원, 북서울꿈의숲 중에 투표해주세요!",
+        images: [], imageCount: 0, thumbnailUrl: null,
+        author: DEMO_MEMBERS[3], likeCount: 5, commentCount: 12,
+        liked: false, isPinned: false, canDelete: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+      },
+      {
+        id: 5, groupId: 1, category: "GREETING", title: "처음으로 가입인사 드려요!",
+        content: "안녕하세요~ 이번에 새로 가입하게 된 이서윤입니다. 앞으로 잘 부탁드려요! 열심히 참여하겠습니다.",
+        images: [], imageCount: 0, thumbnailUrl: null,
+        author: DEMO_MEMBERS[4], likeCount: 4, commentCount: 2,
+        liked: false, isPinned: false, canDelete: false,
+        createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+        updatedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+      },
+    ];
+
+    let filtered = category ? demoPosts.filter((p) => p.category === category) : demoPosts;
+    const totalCount = filtered.length;
+    const start = page * size;
+    const end = start + size;
+    const dtoList = filtered.slice(start, end);
+    const totalPage = Math.ceil(totalCount / size);
+
+    return HttpResponse.json({
+      dtoList,
+      pageNumList: Array.from({ length: totalPage }, (_, i) => i),
+      prev: page > 0,
+      next: end < totalCount,
+      totalCount,
+      totalPage,
+      current: page,
+    });
+  }),
+
+  // 게시글 상세
+  http.get("*/api/groups/:groupId/board/:postId", async ({ params }) => {
+    await delay(DELAY_MS);
+    return HttpResponse.json({
+      id: Number(params.postId),
+      groupId: Number(params.groupId),
+      category: "FREE",
+      title: "게시글 상세",
+      content: "게시글 내용입니다.",
+      images: [], imageCount: 0, thumbnailUrl: null,
+      author: DEMO_MEMBERS[0], likeCount: 3, commentCount: 1,
+      liked: false, isPinned: false, canDelete: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }),
+
+  // 게시글 작성
+  http.post("*/api/groups/:groupId/board", async () => {
+    await delay(DELAY_MS);
+    return HttpResponse.json({ id: Date.now(), message: "게시글이 작성되었습니다." });
+  }),
+
+  // 게시글 삭제
+  http.delete("*/api/board/posts/:postId", async () => {
+    await delay(DELAY_MS);
+    return HttpResponse.json({ message: "게시글이 삭제되었습니다." });
+  }),
+
+  // 게시글 좋아요 토글
+  http.post("*/api/board/posts/:postId/like", async () => {
+    await delay(DELAY_MS);
+    return HttpResponse.json({ liked: true, likeCount: 1 });
+  }),
+
+  // 댓글 목록
+  http.get("*/api/board/posts/:postId/comments", async () => {
+    await delay(DELAY_MS);
+    return HttpResponse.json([
+      {
+        id: 1, postId: 1, content: "환영합니다! 잘 부탁드려요 😊",
+        author: DEMO_MEMBERS[0], createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+        canDelete: false,
+      },
+      {
+        id: 2, postId: 1, content: "저도 반갑습니다! 다음 정모 때 봬요~",
+        author: DEMO_MEMBERS[1], createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+        canDelete: false,
+      },
+    ]);
+  }),
+
+  // 댓글 작성
+  http.post("*/api/board/posts/:postId/comments", async ({ request }) => {
+    await delay(DELAY_MS);
+    const body = await request.json() as { content: string };
+    return HttpResponse.json({
+      id: Date.now(), postId: 1, content: body.content,
+      author: DEMO_MEMBERS[0], createdAt: new Date().toISOString(), canDelete: true,
+    });
+  }),
+
+  // 댓글 삭제
+  http.delete("*/api/board/comments/:commentId", async () => {
     await delay(DELAY_MS);
     return HttpResponse.json({ message: "댓글이 삭제되었습니다." });
   }),

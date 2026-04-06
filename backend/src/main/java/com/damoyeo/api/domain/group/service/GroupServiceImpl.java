@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -720,11 +721,14 @@ public class GroupServiceImpl implements GroupService {
      * 멤버 목록 조회에서 사용됩니다.
      */
     private GroupMemberDTO memberToDTO(GroupMember gm) {
+        boolean isNew = gm.getCreatedAt() != null &&
+                gm.getCreatedAt().isAfter(LocalDateTime.now().minusDays(7));
         return GroupMemberDTO.builder()
                 .id(gm.getId())
                 .member(MemberSummaryDTO.from(gm.getMember()))
                 .role(gm.getRole().name())
                 .joinedAt(gm.getCreatedAt())  // BaseEntity의 createdAt
+                .isNewMember(isNew)
                 .build();
     }
 }
