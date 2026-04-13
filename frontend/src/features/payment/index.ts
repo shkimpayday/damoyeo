@@ -13,7 +13,6 @@ export * from "./hooks/use-payment";
 // Components
 export { PremiumUpgradeModal } from "./components/premium-upgrade-modal";
 export { PremiumLimitModal } from "./components/premium-limit-modal";
-export { PremiumBadge } from "./components/premium-badge";
 export { PremiumStatusCard } from "./components/premium-status-card";
 
 // Types
