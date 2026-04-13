@@ -31,15 +31,19 @@
 
 - 지역/관심사 기반 모임 생성 및 가입
 - 정기모임(정모) 일정 관리 및 참석
-- 모임 내 채팅 (Phase 2)
-- 위치 기반 근처 모임 검색 (Phase 2)
+- 모임 내 실시간 채팅 (WebSocket/STOMP)
+- 위치 기반 근처 모임 검색 (Geolocation)
+- 모임 내 게시판 및 갤러리
+- 고객 상담 채팅 (관리자-사용자)
+- 프리미엄 결제 (KakaoPay)
+- 관리자 대시보드
 
 ### 프로젝트 구조
 
 ```
 damoyeo/
-├── frontend/          # React 19 + Vite 7 + TypeScript (현재)
-├── backend/           # Spring Boot 3.1 + Java 17 (예정)
+├── frontend/          # React 19 + Vite 7 + TypeScript
+├── backend/           # Spring Boot 3.1 + Java 17
 └── CLAUDE.md          # 통합 문서
 ```
 
@@ -98,7 +102,9 @@ frontend/
 │   │           ├── auth/             # 인증 페이지
 │   │           ├── groups/           # 모임 페이지
 │   │           ├── meetings/         # 정모 페이지
-│   │           └── events/           # 이벤트 페이지 (NEW)
+│   │           ├── events/           # 이벤트 페이지
+│   │           ├── payment/          # 결제 콜백 페이지
+│   │           └── admin/            # 관리자 페이지
 │   │
 │   ├── components/                   # 공유 컴포넌트
 │   │   ├── layout/                   # 레이아웃
@@ -114,7 +120,7 @@ frontend/
 │   │       └── result-modal.tsx
 │   │
 │   ├── features/                     # 기능 모듈 (Feature-based)
-│   │   ├── auth/                     # 인증
+│   │   ├── auth/                     # 인증 (로그인/회원가입/프로필)
 │   │   │   ├── api/
 │   │   │   ├── components/
 │   │   │   ├── hooks/
@@ -139,27 +145,37 @@ frontend/
 │   │   │   ├── components/
 │   │   │   ├── hooks/
 │   │   │   └── types/
-│   │   └── chat/                     # 채팅 (NEW)
+│   │   ├── chat/                     # 실시간 채팅 (WebSocket/STOMP)
+│   │   │   ├── api/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   ├── stores/
+│   │   │   └── types/
+│   │   ├── board/                    # 모임 게시판
+│   │   │   ├── api/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   └── types/
+│   │   ├── gallery/                  # 모임 갤러리
+│   │   │   ├── api/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   └── types/
+│   │   ├── payment/                  # 프리미엄 결제 (KakaoPay)
+│   │   │   ├── api/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   └── types/
+│   │   └── support/                  # 고객 상담 채팅
 │   │       ├── api/
-│   │       │   └── chat-api.ts
 │   │       ├── components/
-│   │       │   ├── chat-room.tsx            # 메인 컨테이너
-│   │       │   ├── chat-header.tsx          # 헤더 (연결 상태)
-│   │       │   ├── message-list.tsx         # 메시지 목록
-│   │       │   ├── message-item.tsx         # 메시지 아이템
-│   │       │   ├── message-input.tsx        # 입력창 + 타이핑
-│   │       │   └── typing-indicator.tsx     # 타이핑 인디케이터
 │   │       ├── hooks/
-│   │       │   ├── use-websocket.ts         # WebSocket 연결 관리
-│   │       │   ├── use-chat-messages.ts     # TanStack Query
-│   │       │   └── use-chat-room.ts         # Combined Hook
 │   │       ├── stores/
-│   │       │   └── chat-store.ts            # 메시지 + 타이핑 상태
-│   │       ├── types/
-│   │       │   └── index.ts                 # ChatMessageDTO, TypingEvent
-│   │       └── index.ts
+│   │       └── types/
 │   │
-│   ├── mocks/                        # MSW 모킹 (NEW)
+│   ├── data/                         # 정적 데이터 (카테고리 아이콘 등)
+│   │
+│   ├── mocks/                        # MSW 모킹
 │   │   ├── browser.ts                # MSW 브라우저 설정
 │   │   ├── handlers.ts               # API 핸들러
 │   │   └── data.ts                   # 목 데이터
@@ -257,29 +273,49 @@ frontend/
 ### 라우트 맵
 
 ```
-/                              → MainPage (홈 피드 + 배너 슬라이더)
-├── /search                    → SearchPage (통합 검색)
-├── /notifications             → NotificationPage
-│
-├── /events/:eventId           → EventDetailPage (이벤트 상세)
+/                                       → MainPage (홈 피드 + 배너 슬라이더)
+├── /search                             → SearchPage
+├── /notifications                      → NotificationPage
+├── /events/:eventId                    → EventDetailPage
 │
 ├── /groups
-│   ├── /groups/list           → GroupListPage
-│   ├── /groups/create         → GroupCreatePage [Protected]
-│   ├── /groups/:groupId       → GroupDetailPage
-│   └── /groups/:groupId/manage → GroupManagePage [Protected]
+│   ├── /groups/list                    → GroupListPage
+│   ├── /groups/:groupId                → GroupDetailPage
+│   ├── /groups/create                  → GroupCreatePage [Protected]
+│   ├── /groups/:groupId/edit           → GroupEditPage [Protected]
+│   ├── /groups/:groupId/manage         → GroupManagePage [Protected]
+│   ├── /groups/:groupId/chat           → ChatPage [Protected]
+│   ├── /groups/:groupId/gallery        → GalleryPage [Protected]
+│   └── /groups/:groupId/board          → BoardPage [Protected]
 │
 ├── /meetings
-│   ├── /meetings/list         → MeetingListPage [Protected]
-│   ├── /meetings/:meetingId   → MeetingDetailPage [Protected]
-│   └── /meetings/create/:groupId → MeetingCreatePage [Protected]
+│   ├── /meetings                       → MeetingListPage [Protected]
+│   ├── /meetings/:meetingId            → MeetingDetailPage [Protected]
+│   ├── /meetings/create/:groupId       → MeetingCreatePage [Protected]
+│   ├── /meetings/:meetingId/edit       → MeetingEditPage [Protected]
+│   └── /meetings/:meetingId/chat       → MeetingChatPage [Protected]
 │
-└── /member
-    ├── /member/login          → LoginPage
-    ├── /member/signup         → SignupPage
-    ├── /member/profile        → ProfilePage [Protected]
-    ├── /member/my-groups      → MyGroupsPage [Protected]
-    └── /member/kakao          → KakaoRedirectPage
+├── /member (outside MobileLayout)
+│   ├── /member/login                   → LoginPage
+│   ├── /member/signup                  → SignupPage
+│   └── /member/kakao                   → KakaoRedirectPage
+│
+├── /member (inside MobileLayout, Protected)
+│   ├── /member/profile                 → ProfilePage
+│   ├── /member/my-groups               → MyGroupsPage
+│   └── /member/:memberId               → MemberProfilePage
+│
+├── /payment (outside MobileLayout)
+│   ├── /payment/success                → PaymentSuccessPage
+│   ├── /payment/cancel                 → PaymentCancelPage
+│   └── /payment/fail                   → PaymentFailPage
+│
+└── /admin [ADMIN role required]
+    ├── /admin/dashboard                → AdminDashboardPage
+    ├── /admin/members                  → AdminMembersPage
+    ├── /admin/groups                   → AdminGroupsPage
+    ├── /admin/events                   → AdminEventsPage
+    └── /admin/support                  → AdminSupportPage
 ```
 
 ### 보호된 라우트
@@ -391,7 +427,7 @@ const LoginPage = lazy(() => import("./pages/auth/login-page"));
 // 모임명, 제목, 날짜, 장소, 참석자 수, 상태 뱃지
 ```
 
-#### BannerSlider (NEW)
+#### BannerSlider
 
 ```tsx
 <BannerSlider banners={eventBanners} />
@@ -399,7 +435,7 @@ const LoginPage = lazy(() => import("./pages/auth/login-page"));
 // 수동 네비게이션, 페이지네이션 인디케이터 포함
 ```
 
-#### TopPromoBanner (NEW)
+#### TopPromoBanner
 
 ```tsx
 <TopPromoBanner />
@@ -629,7 +665,7 @@ const { data: meeting } = useMeetingDetail(meetingId);
 const attendMeeting = useAttendMeeting();
 ```
 
-#### Events Hooks (NEW)
+#### Events Hooks
 
 ```tsx
 // 활성 배너 목록
@@ -891,7 +927,7 @@ interface NotificationDTO {
 }
 ```
 
-### 이벤트 타입 (NEW)
+### 이벤트 타입
 
 ```tsx
 // features/events/types/index.ts
@@ -1107,7 +1143,7 @@ npm run preview
 - [x] 검색/필터
 - [x] 카테고리 시스템
 
-### Phase 2 - 핵심 기능 (진행 중)
+### Phase 2 - 핵심 기능 (완료)
 
 - [x] 프로필 수정 기능 (이미지 업로드, 닉네임/소개 변경)
 - [x] 위치 기반 근처 모임 검색 (Geolocation API)
@@ -1116,83 +1152,21 @@ npm run preview
 - [x] 무한 스크롤 (Intersection Observer)
 - [x] 이벤트/배너 시스템 (메인 배너 슬라이더, 이벤트 상세 페이지)
 - [x] MSW API 모킹 설정 (개발/테스트용)
-- [x] 정모 상태 관리 개선 (날짜 기반 예정/지난 정모 분리)
-- [x] 알림 시스템 (강퇴/모임해체 알림 추가)
-- [x] **실시간 채팅 (WebSocket/STOMP)**
-  - [x] @stomp/stompjs, sockjs-client 의존성 추가
-  - [x] WebSocket 연결 관리 (use-websocket.ts)
-  - [x] Zustand 채팅 스토어 (메시지 + 타이핑 상태)
-  - [x] TanStack Query 메시지 히스토리 로드
-  - [x] ChatRoom 컴포넌트 (헤더, 메시지 목록, 입력창)
-  - [x] 타이핑 인디케이터 ("○○○님이 입력 중...")
-  - [x] 스마트 자동 스크롤 (내 메시지 무조건 스크롤)
-  - [x] 채팅 별도 페이지 (`/groups/:groupId/chat`)
-- [ ] 실시간 알림 (SSE/WebSocket)
+- [x] 정모 상태 관리 (날짜 기반 예정/지난 정모 분리)
+- [x] 알림 시스템 (강퇴/모임해체 알림)
+- [x] 실시간 채팅 (WebSocket/STOMP, 타이핑 인디케이터, 스마트 자동 스크롤)
+- [x] 정모 채팅 (`/meetings/:meetingId/chat`)
+- [x] 모임 게시판 (`/groups/:groupId/board`)
+- [x] 모임 갤러리 (`/groups/:groupId/gallery`)
+- [x] 프리미엄 결제 (KakaoPay 연동)
+- [x] 고객 상담 채팅 (관리자-사용자 1:1)
+- [x] 관리자 대시보드 (`/admin`)
 
 ### Phase 3 - 고도화
 
 - [ ] PWA + 푸시 알림
-- [ ] 프리미엄 기능
-- [ ] 관리자 대시보드
+- [ ] 실시간 알림 (SSE/WebSocket)
 
 ---
 
-## 최근 추가된 파일
-
-### 인증 기능
-- `src/features/auth/hooks/use-profile.ts` - 프로필 조회/수정/이미지 업로드 hooks
-- `src/features/auth/components/profile-edit-modal.tsx` - 프로필 수정 모달
-
-### 모임 기능
-- `src/features/groups/hooks/use-group-members.ts` - 멤버 관리 hooks (역할 변경, 강퇴)
-- `src/features/groups/hooks/use-location.ts` - Geolocation 위치 hook (세션 저장)
-- `src/features/groups/components/nearby-groups-section.tsx` - 내 근처 모임 섹션
-- `src/app/routes/pages/groups/edit-page.tsx` - 모임 수정 페이지
-
-### 정모 기능
-- `src/app/routes/pages/meetings/edit-page.tsx` - 정모 수정 페이지
-- `src/features/meetings/hooks/use-meetings.ts` - 예정/지난 정모 조회 hooks 추가
-  - `useUpcomingMeetingsByGroup(groupId)` - 예정된 정모 (날짜 기반)
-  - `usePastMeetingsByGroup(groupId)` - 지난 정모 (날짜 기반)
-- `src/app/routes/pages/meetings/detail-page.tsx` - UI 개선 (카드 기반 레이아웃)
-
-### 이벤트/배너 기능
-- `src/features/events/api/events-api.ts` - 이벤트 API 클라이언트
-- `src/features/events/hooks/use-events.ts` - 이벤트 Query hooks
-- `src/features/events/components/banner-slider.tsx` - 메인 배너 슬라이더
-- `src/features/events/components/top-promo-banner.tsx` - 프로모션 배너
-- `src/features/events/types/index.ts` - 이벤트 타입 정의
-- `src/app/routes/pages/events/detail-page.tsx` - 이벤트 상세 페이지
-
-### MSW 모킹
-- `src/mocks/browser.ts` - MSW 브라우저 설정
-- `src/mocks/handlers.ts` - API 요청 핸들러
-- `src/mocks/data.ts` - 목 데이터 (DEMO_EVENT_BANNERS 등)
-
-### 채팅 기능 (NEW)
-- `src/features/chat/api/chat-api.ts` - 채팅 REST API 클라이언트
-- `src/features/chat/hooks/use-websocket.ts` - WebSocket 연결 및 STOMP 관리
-- `src/features/chat/hooks/use-chat-messages.ts` - TanStack Query 메시지 히스토리
-- `src/features/chat/hooks/use-chat-room.ts` - WebSocket + Query 통합 훅
-- `src/features/chat/stores/chat-store.ts` - 메시지 + 타이핑 상태 (Zustand)
-- `src/features/chat/components/chat-room.tsx` - 채팅방 메인 컨테이너
-- `src/features/chat/components/chat-header.tsx` - 헤더 (연결 상태)
-- `src/features/chat/components/message-list.tsx` - 메시지 목록 (스마트 스크롤)
-- `src/features/chat/components/message-item.tsx` - 메시지 아이템 (좌/우 정렬)
-- `src/features/chat/components/message-input.tsx` - 입력창 + 타이핑 이벤트
-- `src/features/chat/components/typing-indicator.tsx` - 타이핑 인디케이터
-- `src/features/chat/types/index.ts` - 채팅 타입 정의
-- `src/app/routes/pages/groups/chat-page.tsx` - 채팅 전용 페이지
-
-**주요 기능:**
-- WebSocket/STOMP 실시간 메시지 송수신
-- JWT 인증 통합 (CONNECT 프레임)
-- 메시지 히스토리 로드 (TanStack Query)
-- 읽음 상태 추적 (unread count)
-- 타이핑 인디케이터 (3초 디바운싱)
-- 스마트 자동 스크롤 (내 메시지 무조건 스크롤, 다른 사람 메시지 조건부)
-- 채팅 별도 페이지 (`/groups/:groupId/chat`)
-
----
-
-> 마지막 업데이트: 2025-02-25
+> 마지막 업데이트: 2026-04-14

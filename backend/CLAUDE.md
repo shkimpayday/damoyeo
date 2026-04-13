@@ -22,7 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Spring Boot 3.1** + **Java 17**
 - **MariaDB** with **JPA/Hibernate** + **QueryDSL 5.0**
 - **Spring Security** with **JWT (JJWT 0.11.5)**
-- **Lombok**, **ModelMapper 3.1**, **SpringDoc OpenAPI 2.1**
+- **WebSocket/STOMP** (SockJS) - 실시간 채팅
+- **Lombok**, **SpringDoc OpenAPI 2.1**, **Gson 2.10.1**
+- **DTO 변환**: Builder 패턴 (ModelMapper 미사용)
 
 ## Project Architecture
 
@@ -32,16 +34,22 @@ src/main/java/com/damoyeo/api/
 ├── domain/                     # Business domains
 │   ├── member/                 # 회원 (로그인, 프로필)
 │   ├── group/                  # 모임 CRUD & 멤버 관리
-│   ├── meeting/                # 정모 (정기모임)
+│   ├── meeting/                # 정모 (scheduler/ 포함)
 │   ├── category/               # 18개 카테고리
 │   ├── notification/           # 알림
-│   └── event/                  # 이벤트/배너 (NEW)
+│   ├── event/                  # 이벤트/배너
+│   ├── chat/                   # 실시간 채팅 (WebSocket/STOMP)
+│   ├── board/                  # 모임 게시판
+│   ├── gallery/                # 모임 갤러리
+│   ├── payment/                # 프리미엄 결제 (KakaoPay)
+│   ├── support/                # 고객 상담 채팅
+│   └── admin/                  # 관리자 (통계, 관리 기능)
 └── global/                     # Cross-cutting concerns
     ├── common/                 # BaseEntity, PageDTO
-    ├── config/                 # SecurityConfig, WebConfig
+    ├── config/                 # SecurityConfig, WebConfig, WebSocketConfig
     ├── exception/              # GlobalExceptionHandler, CustomException
-    ├── security/               # JWT filters, handlers
-    └── util/                   # JWTUtil
+    ├── security/               # JWT filters, handlers, JWTChannelInterceptor
+    └── util/                   # JWTUtil, FileUploadUtil
 ```
 
 ### Domain Layer Pattern
@@ -108,8 +116,10 @@ Swagger UI: http://localhost:8080/swagger-ui.html
 | `GlobalExceptionHandler.java` | Maps exceptions to HTTP responses |
 | `DataInitializer.java` | Seeds 18 categories on startup |
 | `BaseEntity.java` | Auditing fields (createdAt, modifiedAt) |
-| `EventController.java` | 이벤트/배너 REST API (NEW) |
-| `EventServiceImpl.java` | 이벤트 비즈니스 로직 (NEW) |
+| `EventController.java` | 이벤트/배너 REST API |
+| `ChatController.java` | 채팅 REST + WebSocket 엔드포인트 |
+| `WebSocketConfig.java` | STOMP/SockJS 설정 |
+| `JWTChannelInterceptor.java` | WebSocket JWT 인증 |
 
 ## Code Conventions
 
@@ -118,23 +128,24 @@ Swagger UI: http://localhost:8080/swagger-ui.html
 - All controllers annotated with `@Tag` and `@Operation` for Swagger
 - Use `@Transactional(readOnly = true)` for query-only methods
 
-## Event API Endpoints (NEW)
+## 주요 도메인 특징
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/events/banners` | X | 활성 배너 목록 (시간 기반 필터링) |
-| GET | `/api/events/{id}` | X | 이벤트 상세 조회 |
-| GET | `/api/events` | O (ADMIN) | 전체 이벤트 목록 |
-| POST | `/api/events` | O (ADMIN) | 이벤트 생성 |
-| DELETE | `/api/events/{id}` | O (ADMIN) | 이벤트 삭제 |
-| PATCH | `/api/events/{id}/toggle` | O (ADMIN) | 이벤트 활성화 토글 |
+### Event
+- `startDate` ~ `endDate` 범위 내 활성 배너 자동 표시
+- `isActive` 플래그로 수동 비활성화
+- `displayOrder`로 배너 순서 관리
 
-### Event Entity 특징
-- **시간 기반 표시**: `startDate` ~ `endDate` 범위 내에만 배너 표시
-- **활성화 플래그**: `isActive`로 관리자가 수동 비활성화 가능
-- **정렬 순서**: `displayOrder`로 배너 순서 관리
-- **마크다운 지원**: `content` 필드에 마크다운 콘텐츠 저장
-- **태그 시스템**: 쉼표 구분 태그로 분류
+### Chat (WebSocket/STOMP)
+- `ws://localhost:8080/ws` (SockJS)
+- CONNECT 프레임 `Authorization` 헤더로 JWT 인증
+- `SEND /app/chat/{groupId}`, `SUBSCRIBE /topic/chat/{groupId}`
+- 타이핑 이벤트: `/app/chat/{groupId}/typing`
+
+### Meeting Scheduler
+- `domain/meeting/scheduler/` — 정모 상태 자동 변경 스케줄러
+
+### Payment (KakaoPay)
+- READY → 팝업 → pg_token 리다이렉트 → APPROVE 플로우
 
 ## DTO 구조 (중첩 객체 패턴)
 

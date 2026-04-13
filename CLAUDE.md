@@ -94,15 +94,18 @@
 **다모여**는 소모임(somoim.co.kr)을 참조한 오프라인 모임 플랫폼입니다.
 - 지역/관심사 기반 모임 생성 및 가입
 - 정기모임(정모) 일정 관리 및 참석
-- 모임 내 채팅 (Phase 2)
-- 위치 기반 근처 모임 검색 (Phase 2)
+- 모임 내 실시간 채팅 (WebSocket/STOMP)
+- 위치 기반 근처 모임 검색 (Geolocation)
+- 모임 내 게시판 및 갤러리
+- 고객 상담 채팅, 프리미엄 결제 (KakaoPay)
+- 관리자 대시보드
 
 ## 프로젝트 구조
 
 ```
 damoyeo/
 ├── frontend/          # React 19 + Vite 7 + TypeScript
-├── backend/           # Spring Boot 3.1 + Java 17 (예정)
+├── backend/           # Spring Boot 3.1 + Java 17
 └── CLAUDE.md          # 통합 문서 (이 파일)
 ```
 
@@ -131,7 +134,9 @@ cd backend
 
 ### 정적 리소스 접근
 - 프로필 이미지: `http://localhost:8080/uploads/profiles/{filename}`
-- 모임 이미지: `http://localhost:8080/uploads/groups/{filename}` (예정)
+- 모임 이미지: `http://localhost:8080/uploads/groups/{filename}`
+- 게시판 이미지: `http://localhost:8080/uploads/board/{groupId}/{filename}`
+- 갤러리 이미지: `http://localhost:8080/uploads/gallery/{groupId}/{filename}`
 
 ---
 
@@ -481,61 +486,44 @@ interface TypingEvent {
 
 ```
 frontend/src/
-├── api/                    # API 클라이언트
-│   ├── memberApi.tsx       # 인증/프로필
-│   ├── groupApi.tsx        # 모임 CRUD
-│   ├── meetingApi.tsx      # 정모
-│   ├── categoryApi.tsx     # 카테고리
-│   └── notificationApi.tsx # 알림
+├── app/
+│   ├── provider.tsx             # QueryClient + CookiesProvider
+│   └── routes/
+│       ├── index.tsx            # 라우트 정의 (lazy loading)
+│       ├── protected-route.tsx  # 인증 가드 (requiredRoles 지원)
+│       └── pages/               # 페이지 컴포넌트
+│           ├── main-page.tsx
+│           ├── search-page.tsx
+│           ├── notification-page.tsx
+│           ├── auth/            # 로그인, 회원가입, 프로필, 내모임
+│           ├── groups/          # 모임 (목록, 상세, 생성, 수정, 관리, 채팅, 갤러리, 게시판)
+│           ├── meetings/        # 정모 (목록, 상세, 생성, 수정, 채팅)
+│           ├── events/          # 이벤트 상세
+│           ├── payment/         # 결제 콜백 (success, cancel, fail)
+│           └── admin/           # 관리자 (대시보드, 회원, 모임, 이벤트, 상담)
 │
 ├── components/
-│   ├── common/             # 공통 UI (PageComponent, Avatar, etc.)
-│   ├── member/             # 인증/프로필 관련
-│   ├── group/              # 모임 관련 (GroupCard, etc.)
-│   ├── meeting/            # 정모 관련 (MeetingCard, etc.)
-│   └── menus/              # 네비게이션 (Header, BottomNav)
+│   ├── layout/                  # MobileLayout, Header, BottomNav, NotificationBell
+│   └── ui/                      # Avatar, Spinner, CategoryChip, EmptyState, ResultModal
 │
-├── hooks/                  # 커스텀 훅
-│   ├── useCustomLogin.tsx  # 인증 로직
-│   ├── useCustomMove.tsx   # 네비게이션
-│   ├── useGroups.tsx       # TanStack Query (모임)
-│   └── useMeetings.tsx     # TanStack Query (정모)
+├── features/                    # Feature-based 모듈
+│   ├── auth/                    # 인증/프로필
+│   ├── groups/                  # 모임
+│   ├── meetings/                # 정모
+│   ├── notifications/           # 알림
+│   ├── events/                  # 이벤트/배너
+│   ├── chat/                    # 실시간 채팅 (WebSocket/STOMP)
+│   ├── board/                   # 모임 게시판
+│   ├── gallery/                 # 모임 갤러리
+│   ├── payment/                 # 프리미엄 결제 (KakaoPay)
+│   └── support/                 # 고객 상담 채팅
 │
-├── layouts/
-│   └── MobileLayout.tsx    # 모바일 레이아웃
-│
-├── pages/
-│   ├── MainPage.tsx        # 홈 피드
-│   ├── NotificationPage.tsx
-│   ├── member/             # 로그인, 프로필, 내모임
-│   ├── group/              # 목록, 상세, 생성, 관리
-│   ├── meeting/            # 목록, 상세, 생성
-│   └── search/             # 검색
-│
-├── router/
-│   ├── root.tsx            # 메인 라우터
-│   ├── groupRouter.tsx
-│   ├── meetingRouter.tsx
-│   ├── memberRouter.tsx
-│   └── ProtectedRoute.tsx  # 인증 보호
-│
-├── types/                  # TypeScript 타입 정의
-│   ├── global.d.ts
-│   ├── member.d.ts
-│   ├── group.d.ts
-│   ├── meeting.d.ts
-│   ├── category.d.ts
-│   └── notification.d.ts
-│
-├── util/
-│   ├── jwtUtil.ts          # JWT 인터셉터
-│   ├── cookieUtil.ts       # 쿠키 유틸
-│   └── dateUtil.ts         # 날짜 포맷팅
-│
-└── zstore/                 # Zustand 스토어
-    ├── useZustandMember.ts # 인증 상태
-    ├── useZustandMyGroups.ts
-    └── useZustandNotifications.ts
+├── data/                        # 정적 데이터 (카테고리 아이콘 등)
+├── mocks/                       # MSW API 모킹 (개발용)
+├── lib/                         # axios.ts, cookie.ts, react-query.ts
+├── config/                      # env.ts
+├── utils/                       # date.ts, image.ts
+└── assets/                      # logo.svg 등
 ```
 
 ---
@@ -555,28 +543,43 @@ frontend/src/
 ## 라우팅 구조
 
 ```
-/                          → MainPage (홈 피드 + 배너 슬라이더)
-├── /search                → SearchPage (통합 검색)
-├── /notifications         → NotificationPage
-│
-├── /events/:eventId       → EventDetailPage (이벤트 상세)
-│
-├── /groups                → Redirect to /groups/list
-│   ├── /groups/list       → GroupListPage
-│   ├── /groups/create     → GroupCreatePage
-│   ├── /groups/:groupId   → GroupDetailPage
-│   └── /groups/:groupId/manage → GroupManagePage
-│
-├── /meetings              → MeetingListPage
-│   ├── /meetings/:meetingId → MeetingDetailPage
-│   └── /meetings/create/:groupId → MeetingCreatePage
-│
-└── /member
-    ├── /member/login      → LoginPage
-    ├── /member/signup     → SignupPage
-    ├── /member/profile    → ProfilePage
-    ├── /member/my-groups  → MyGroupsPage
-    └── /member/kakao      → KakaoRedirectPage
+/                                 → MainPage
+├── /search                       → SearchPage
+├── /notifications                → NotificationPage
+├── /events/:eventId              → EventDetailPage
+├── /groups
+│   ├── /groups/list              → GroupListPage
+│   ├── /groups/:groupId          → GroupDetailPage
+│   ├── /groups/create            → GroupCreatePage [Protected]
+│   ├── /groups/:groupId/edit     → GroupEditPage [Protected]
+│   ├── /groups/:groupId/manage   → GroupManagePage [Protected]
+│   ├── /groups/:groupId/chat     → ChatPage [Protected]
+│   ├── /groups/:groupId/gallery  → GalleryPage [Protected]
+│   └── /groups/:groupId/board    → BoardPage [Protected]
+├── /meetings
+│   ├── /meetings                 → MeetingListPage [Protected]
+│   ├── /meetings/:meetingId      → MeetingDetailPage [Protected]
+│   ├── /meetings/create/:groupId → MeetingCreatePage [Protected]
+│   ├── /meetings/:meetingId/edit → MeetingEditPage [Protected]
+│   └── /meetings/:meetingId/chat → MeetingChatPage [Protected]
+├── /member (Protected)
+│   ├── /member/profile           → ProfilePage
+│   ├── /member/my-groups         → MyGroupsPage
+│   └── /member/:memberId         → MemberProfilePage
+├── /member (Public, outside layout)
+│   ├── /member/login             → LoginPage
+│   ├── /member/signup            → SignupPage
+│   └── /member/kakao             → KakaoRedirectPage
+├── /payment (outside layout)
+│   ├── /payment/success          → PaymentSuccessPage
+│   ├── /payment/cancel           → PaymentCancelPage
+│   └── /payment/fail             → PaymentFailPage
+└── /admin [ADMIN role required]
+    ├── /admin/dashboard          → AdminDashboardPage
+    ├── /admin/members            → AdminMembersPage
+    ├── /admin/groups             → AdminGroupsPage
+    ├── /admin/events             → AdminEventsPage
+    └── /admin/support            → AdminSupportPage
 ```
 
 ---
@@ -616,30 +619,25 @@ frontend/src/
 - [x] 카테고리 시스템
 - [x] 이메일 인증
 
-### Phase 2 - 핵심 기능 (진행 중)
+### Phase 2 - 핵심 기능 (완료)
 - [x] 위치 기반 검색 (Geolocation + Spatial Query)
 - [x] 무한 스크롤
-- [x] 프로필 이미지 업로드
-- [x] 프로필 수정 기능
+- [x] 프로필 이미지 업로드 및 수정
 - [x] 멤버 관리 (역할 변경, 강퇴)
 - [x] 모임/정모 수정 기능
-- [x] 알림 시스템 (회원가입 환영 알림, 폴링 기반)
-- [x] 이벤트/배너 시스템 (메인 배너 슬라이더, 이벤트 상세 페이지)
-- [x] 정모 상태 관리 (날짜 기반 예정/지난 정모 분리)
-- [x] 알림 확장 (강퇴/모임해체 알림)
-- [x] **실시간 채팅 (WebSocket/STOMP)**
-  - [x] WebSocket/STOMP 설정 및 JWT 인증
-  - [x] 메시지 송수신 및 히스토리 저장
-  - [x] 읽음 상태 추적 (unread count)
-  - [x] 타이핑 인디케이터 ("○○○님이 입력 중...")
-  - [x] 채팅 별도 페이지 분리 (`/groups/:groupId/chat`)
-  - [x] 스마트 자동 스크롤 (내 메시지 무조건 스크롤)
-- [ ] 실시간 알림 (SSE/WebSocket)
+- [x] 알림 시스템 (폴링 기반, 강퇴/모임해체 알림)
+- [x] 이벤트/배너 시스템
+- [x] 정모 상태 관리 (날짜 기반)
+- [x] 실시간 채팅 (WebSocket/STOMP, 타이핑 인디케이터)
+- [x] 정모 채팅
+- [x] 모임 게시판 및 갤러리
+- [x] 프리미엄 결제 (KakaoPay)
+- [x] 고객 상담 채팅
+- [x] 관리자 대시보드
 
 ### Phase 3 - 고도화
 - [ ] PWA + 푸시 알림
-- [ ] 프리미엄 기능
-- [ ] 관리자 대시보드
+- [ ] 실시간 알림 (SSE/WebSocket)
 
 ---
 
@@ -661,29 +659,18 @@ backend/src/main/java/com/damoyeo/api/
 │   ├── category/                    # 카테고리
 │   ├── email/                       # 이메일 인증
 │   ├── event/                       # 이벤트/배너
-│   └── chat/                        # 채팅 (NEW)
-│       ├── controller/
-│       │   └── ChatController.java  # REST + WebSocket 엔드포인트
-│       ├── service/
-│       │   ├── ChatService.java
-│       │   └── ChatServiceImpl.java
-│       ├── repository/
-│       │   ├── ChatMessageRepository.java
-│       │   └── ChatReadRepository.java
-│       ├── entity/
-│       │   ├── ChatMessage.java     # 메시지 엔티티
-│       │   ├── ChatRead.java        # 읽음 상태 엔티티
-│       │   └── MessageType.java     # TEXT, IMAGE, SYSTEM
-│       └── dto/
-│           ├── ChatMessageDTO.java
-│           ├── SendMessageRequest.java
-│           └── ChatRoomDTO.java
+│   ├── chat/                        # 실시간 채팅 (WebSocket/STOMP)
+│   ├── board/                       # 모임 게시판
+│   ├── gallery/                     # 모임 갤러리
+│   ├── payment/                     # 프리미엄 결제 (KakaoPay)
+│   ├── support/                     # 고객 상담 채팅
+│   └── admin/                       # 관리자 (통계, 회원/모임/이벤트/상담 관리)
 │
 ├── global/                          # 공통 모듈
 │   ├── config/                      # 설정
 │   │   ├── SecurityConfig.java      # Spring Security
 │   │   ├── WebConfig.java           # CORS, 정적 리소스
-│   │   ├── WebSocketConfig.java     # WebSocket/STOMP 설정 (NEW)
+│   │   ├── WebSocketConfig.java     # WebSocket/STOMP 설정
 │   │   └── MailConfig.java          # 메일 설정
 │   ├── security/                    # 보안
 │   │   ├── filter/
@@ -691,7 +678,7 @@ backend/src/main/java/com/damoyeo/api/
 │   │   │   └── LoginFilter.java     # 로그인 처리
 │   │   ├── handler/
 │   │   ├── interceptor/
-│   │   │   └── JWTChannelInterceptor.java  # WebSocket JWT 인증 (NEW)
+│   │   │   └── JWTChannelInterceptor.java  # WebSocket JWT 인증
 │   │   └── CustomUserDetailsService.java
 │   ├── util/                        # 유틸리티
 │   │   ├── JWTUtil.java             # JWT 생성/검증
@@ -716,9 +703,9 @@ backend/src/main/java/com/damoyeo/api/
 ```
 uploads/                          # 로컬 파일 시스템
 ├── profiles/                     # 프로필 이미지
-│   └── {UUID}.{확장자}           # 예: f47ac10b-58cc-4372.jpg
-└── groups/                       # 모임 이미지 (예정)
-    └── {UUID}.{확장자}
+├── groups/                       # 모임 커버/썸네일 이미지
+├── board/{groupId}/              # 게시판 첨부 이미지
+└── gallery/{groupId}/            # 갤러리 이미지
 ```
 
 ### 보안 설정 (JWTCheckFilter)
