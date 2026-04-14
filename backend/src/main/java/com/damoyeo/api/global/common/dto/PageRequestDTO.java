@@ -9,9 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 /**
- * ============================================================================
  * 페이지네이션 요청 DTO (클라이언트 → 서버)
- * ============================================================================
  *
  * [사용 목적]
  * 프론트엔드에서 "몇 페이지, 한 페이지에 몇 개" 정보를 받아오는 객체입니다.
@@ -67,7 +65,6 @@ public class PageRequestDTO {
      * Repository에서 페이지네이션 쿼리를 실행하려면 Pageable 객체가 필요합니다.
      * 이 메서드가 PageRequestDTO를 Pageable로 변환해줍니다.
      *
-     * [사용 예시]
      * // Service에서
      * Page<Group> result = groupRepository.findAll(pageRequestDTO.getPageable("id"));
      *

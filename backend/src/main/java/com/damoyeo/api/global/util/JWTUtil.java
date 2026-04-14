@@ -13,9 +13,7 @@ import java.util.Date;
 import java.util.Map;
 
 /**
- * ============================================================================
  * JWT(JSON Web Token) 유틸리티 클래스
- * ============================================================================
  *
  * [JWT란?]
  * 로그인 상태를 서버가 기억하지 않고, 토큰으로 관리하는 방식입니다.
@@ -92,7 +90,6 @@ public class JWTUtil {
      * @param claims 토큰에 담을 정보 (email, nickname, roleNames, social)
      * @return 생성된 JWT 문자열
      *
-     * [사용 예시]
      * Map<String, Object> claims = memberDTO.getClaims();
      * String accessToken = jwtUtil.generateAccessToken(claims);
      *

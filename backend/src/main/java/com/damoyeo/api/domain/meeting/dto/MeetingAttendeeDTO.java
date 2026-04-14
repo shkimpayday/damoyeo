@@ -9,11 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * ============================================================================
  * 정모 참석자 응답 DTO
- * ============================================================================
  *
- * [역할]
  * 정모 참석자 정보를 프론트엔드에 전달하는 데이터 전송 객체입니다.
  * MeetingAttendee 엔티티의 정보와 회원 정보를 담습니다.
  *
@@ -23,7 +20,6 @@ import java.time.LocalDateTime;
  * - 참석 상태 (ATTENDING, MAYBE, NOT_ATTENDING)
  * - 등록 일시
  *
- * [사용 위치]
  * - MeetingController.getAttendees()
  * - MeetingServiceImpl.attendeeToDTO()에서 생성
  *

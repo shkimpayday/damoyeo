@@ -10,11 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ============================================================================
  * 상담 채팅 엔티티
- * ============================================================================
  *
- * [역할]
  * 사용자와 관리자 간의 1:1 상담 채팅방을 나타냅니다.
  *
  * [DB 테이블]
@@ -28,8 +25,6 @@ import java.util.List;
  * [상태 흐름]
  * WAITING → IN_PROGRESS → COMPLETED
  *
- * @author damoyeo
- * @since 2025-03-16
  */
 @Entity
 @Table(name = "support_chat", indexes = {
@@ -112,9 +107,7 @@ public class SupportChat extends BaseEntity {
     @Builder.Default
     private List<SupportMessage> messages = new ArrayList<>();
 
-    // ========================================================================
     // 비즈니스 메서드
-    // ========================================================================
 
     /**
      * 관리자 배정 (상담 시작)

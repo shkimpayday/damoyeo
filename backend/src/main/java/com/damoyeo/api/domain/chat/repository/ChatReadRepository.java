@@ -8,23 +8,17 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 /**
- * ============================================================================
  * 채팅 읽음 상태 Repository
- * ============================================================================
  *
- * [역할]
  * ChatRead 엔티티의 데이터베이스 접근을 담당합니다.
  * 각 회원이 각 모임의 채팅을 어디까지 읽었는지 추적합니다.
  *
  * [상속]
  * JpaRepository<ChatRead, Long>을 상속받아 기본 CRUD 메서드를 자동으로 제공받습니다.
  *
- * [사용 위치]
  * - ChatServiceImpl: 읽음 상태 조회, 업데이트, unread count 계산
  * - ChatController: 읽음 처리 REST API
  *
- * @author damoyeo
- * @since 2025-02-25
  */
 public interface ChatReadRepository extends JpaRepository<ChatRead, Long> {
 
@@ -38,7 +32,6 @@ public interface ChatReadRepository extends JpaRepository<ChatRead, Long> {
      * (group_id, member_id)에 대해 Unique 제약이 있으므로
      * 결과는 최대 1개입니다 (Optional 반환).
      *
-     * [사용 예시]
      * 1. 채팅방 진입 시: lastReadMessageId 조회
      * 2. unread count 계산 시: lastReadMessageId보다 큰 메시지 개수 카운트
      * 3. 읽음 상태 업데이트 시: 기존 레코드 조회 후 UPDATE
@@ -86,9 +79,7 @@ public interface ChatReadRepository extends JpaRepository<ChatRead, Long> {
      */
     void deleteByGroupId(Long groupId);
 
-    // ========================================================================
     // 정모 채팅 관련 쿼리
-    // ========================================================================
 
     /**
      * 회원별 정모별 읽음 상태 조회

@@ -15,11 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * ============================================================================
  * 알림(Notification) REST API 컨트롤러
- * ============================================================================
  *
- * [역할]
  * 알림 관련 HTTP 요청을 처리하는 REST API 엔드포인트를 제공합니다.
  *
  * [기본 URL]
@@ -55,9 +52,7 @@ public class NotificationController {
     /** 알림 서비스 (비즈니스 로직 처리) */
     private final NotificationService notificationService;
 
-    // ========================================================================
     // 알림 조회
-    // ========================================================================
 
     /**
      * 알림 목록 조회 (페이지네이션)
@@ -126,9 +121,7 @@ public class NotificationController {
         return ResponseEntity.ok(Map.of("count", notificationService.getUnreadCount(member.getEmail())));
     }
 
-    // ========================================================================
     // 읽음 처리
-    // ========================================================================
 
     /**
      * 개별 알림 읽음 처리

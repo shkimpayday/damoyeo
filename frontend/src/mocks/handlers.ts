@@ -19,13 +19,13 @@ import {
 const DELAY_MS = 300;
 
 export const handlers = [
-  // ========== 카테고리 API ==========
+  // 카테고리 API
   http.get("*/api/categories", async () => {
     await delay(DELAY_MS);
     return HttpResponse.json(DEMO_CATEGORIES);
   }),
 
-  // ========== 모임 API ==========
+  // 모임 API
   // 추천 모임 (먼저 정의해야 /api/groups/:groupId 보다 우선)
   http.get("*/api/groups/recommended", async () => {
     await delay(DELAY_MS);
@@ -178,7 +178,7 @@ export const handlers = [
   }),
 
 
-  // ========== 정모 API ==========
+  // 정모 API
   // 모임의 예정된 정모 목록
   http.get("*/api/meetings/group/:groupId/upcoming", async ({ params }) => {
     await delay(DELAY_MS);
@@ -301,7 +301,7 @@ export const handlers = [
     return HttpResponse.json({ message: "정모가 취소되었습니다." });
   }),
 
-  // ========== 인증 API ==========
+  // 인증 API
   // 로그인 (Spring Security 설정: usernameParameter("email"), passwordParameter("pw"))
   http.post("*/api/member/login", async ({ request }) => {
     await delay(DELAY_MS);
@@ -405,7 +405,7 @@ export const handlers = [
     return HttpResponse.json({ message: "위치가 업데이트되었습니다." });
   }),
 
-  // ========== 알림 API ==========
+  // 알림 API
   // 알림 목록 (PageResponseDTO 형식 - 백엔드와 동일한 구조)
   http.get("*/api/notifications", async ({ request }) => {
     await delay(DELAY_MS);
@@ -487,7 +487,7 @@ export const handlers = [
     return HttpResponse.json({ result: "SUCCESS" });
   }),
 
-  // ========== 이벤트 API ==========
+  // 이벤트 API
   // 이벤트 배너 목록
   http.get("*/api/events/banners", async () => {
     await delay(DELAY_MS);
@@ -539,7 +539,7 @@ export const handlers = [
     return HttpResponse.json(event);
   }),
 
-  // ========== 관리자 API ==========
+  // 관리자 API
   // 대시보드 통계
   http.get("*/api/admin/dashboard/stats", async () => {
     await delay(DELAY_MS);
@@ -633,7 +633,7 @@ export const handlers = [
     return HttpResponse.json({ message: "모임이 삭제되었습니다." });
   }),
 
-  // ========== 채팅 REST API ==========
+  // 채팅 REST API
   // 내 채팅방 목록
   http.get("*/api/chat/my-chats", async () => {
     await delay(DELAY_MS);
@@ -699,7 +699,7 @@ export const handlers = [
     return HttpResponse.json({ result: "SUCCESS" });
   }),
 
-  // ========== 갤러리 API ==========
+  // 갤러리 API
   // 게시물 목록
   http.get("*/api/groups/:groupId/gallery", async ({ request }) => {
     await delay(DELAY_MS);
@@ -757,7 +757,7 @@ export const handlers = [
     return HttpResponse.json({ message: "댓글이 삭제되었습니다." });
   }),
 
-  // ========== 게시판 API ==========
+  // 게시판 API
   // 게시글 목록 (무한 스크롤 - page 0부터 시작)
   http.get("*/api/groups/:groupId/board", async ({ request }) => {
     await delay(DELAY_MS);
@@ -909,7 +909,7 @@ export const handlers = [
     return HttpResponse.json({ message: "댓글이 삭제되었습니다." });
   }),
 
-  // ========== 결제 API ==========
+  // 결제 API
   // 프리미엄 상태 조회
   http.get("*/api/payments/premium-status", async () => {
     await delay(DELAY_MS);
@@ -977,7 +977,7 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 });
   }),
 
-  // ========== 상담 API ==========
+  // 상담 API
   // 활성 상담 조회 (진행 중인 상담 없음 = 204)
   http.get("*/api/support/active", async () => {
     await delay(DELAY_MS);
@@ -1072,7 +1072,7 @@ export const handlers = [
     return HttpResponse.json({ message: "평가가 등록되었습니다." });
   }),
 
-  // ========== 이메일 인증 API ==========
+  // 이메일 인증 API
   // 인증 코드 발송
   http.post("*/api/email/send", async () => {
     await delay(DELAY_MS);

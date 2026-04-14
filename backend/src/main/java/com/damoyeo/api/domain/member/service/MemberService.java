@@ -6,11 +6,8 @@ import com.damoyeo.api.domain.member.dto.MemberSignupRequest;
 import com.damoyeo.api.domain.member.dto.PublicProfileDTO;
 
 /**
- * ============================================================================
  * 회원 서비스 인터페이스
- * ============================================================================
  *
- * [역할]
  * 회원 관련 비즈니스 로직의 계약(Contract)을 정의합니다.
  *
  * [왜 인터페이스를 사용하는가?]

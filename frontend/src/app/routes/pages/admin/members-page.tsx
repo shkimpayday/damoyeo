@@ -44,9 +44,7 @@ interface PageResponseDTO<T> {
   next: boolean;
 }
 
-// ============================================================================
 // API 함수
-// ============================================================================
 
 /** 회원 목록 조회 */
 const fetchMembers = async (page: number, keyword: string): Promise<PageResponseDTO<AdminMemberDTO>> => {
@@ -84,9 +82,7 @@ const revokePremium = async (memberId: number) => {
   return res.data;
 };
 
-// ============================================================================
 // 컴포넌트
-// ============================================================================
 
 /** 역할 뱃지 컴포넌트 */
 function RoleBadge({ role }: { role: string }) {
@@ -363,9 +359,7 @@ function PremiumManageModal({
   );
 }
 
-// ============================================================================
 // 메인 페이지 컴포넌트
-// ============================================================================
 
 export function MembersPage() {
   const queryClient = useQueryClient();

@@ -21,14 +21,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ============================================================================
  * 회원 관리 API Controller
- * ============================================================================
  *
- * [역할]
  * 회원가입, 프로필 조회/수정, 중복 확인 등 회원 관련 API를 제공합니다.
  *
- * [엔드포인트 목록]
  * POST /api/member/signup         - 회원가입
  * GET  /api/member/profile        - 프로필 조회 (인증 필요)
  * PUT  /api/member/modify         - 프로필 수정 (인증 필요)
@@ -117,14 +113,11 @@ public class MemberController {
     public ResponseEntity<Map<String, Object>> modify(@AuthenticationPrincipal MemberDTO member, @Valid @RequestBody MemberModifyRequest request) {
         log.info("Modify member: {}", member.getEmail());
 
-        // 1. 프로필 수정
         MemberDTO modified = memberService.modify(member.getEmail(), request);
 
-        // 2. 새로운 토큰 발급 (닉네임 등이 변경되었으므로)
         String accessToken = jwtUtil.generateAccessToken(modified.getClaims());
         String refreshToken = jwtUtil.generateRefreshToken(modified.getClaims());
 
-        // 3. 토큰 + 사용자 정보 반환
         return ResponseEntity.ok(Map.of(
                 "accessToken", accessToken,
                 "refreshToken", refreshToken,

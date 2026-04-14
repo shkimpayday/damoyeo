@@ -15,7 +15,10 @@
       "Bash(claude:*)",
       "Bash(mysql:*)",
       "Bash(rd /s /q \"C:\\\\Users\\\\11\\\\.gradle\\\\caches\")",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Bash(find d:/damoyeo/backend/src/main/java -name '*.java' -exec sed -i -e '/ \\\\* ============================================================================$/d' '{}' ';')",
+      "Bash(sed -i '/^\\\\/\\\\/ ======/d' d:/damoyeo/frontend/src/features/auth/api/auth-api.ts d:/damoyeo/frontend/src/features/gallery/types/index.ts)",
+      "Bash(sed -i '/^\\\\/\\\\/ ====/d' d:/damoyeo/frontend/src/features/gallery/types/index.ts)"
     ],
     "additionalDirectories": [
       "d:\\damoyeo\\backend\\src\\main\\java\\com\\damoyeo\\api\\domain\\support\\entity"

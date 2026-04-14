@@ -6,11 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * ============================================================================
  * 상담 메시지 엔티티
- * ============================================================================
  *
- * [역할]
  * 상담 채팅에서 주고받는 개별 메시지를 저장합니다.
  *
  * [DB 테이블]
@@ -20,8 +17,6 @@ import lombok.*;
  * - supportChat (N:1) → SupportChat: 소속 상담 채팅
  * - sender (N:1) → Member: 메시지 발신자
  *
- * @author damoyeo
- * @since 2025-03-16
  */
 @Entity
 @Table(name = "support_message", indexes = {

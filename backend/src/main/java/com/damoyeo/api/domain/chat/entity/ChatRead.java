@@ -9,11 +9,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * ============================================================================
  * 채팅 읽음 상태 추적 엔티티
- * ============================================================================
  *
- * [역할]
  * 각 회원이 각 모임의 채팅을 어디까지 읽었는지 추적합니다.
  * 이를 통해 "읽지 않은 메시지 개수(unread count)"를 효율적으로 계산할 수 있습니다.
  *
@@ -35,7 +32,6 @@ import java.time.LocalDateTime;
  * - meeting (N:1) → Meeting: 정모 (모임 채팅 시 null)
  * - member (N:1) → Member: 회원
  *
- * [사용 예시]
  * 1. 회원 A가 모임 1의 채팅방 진입
  *    → ChatRead 조회 (group_id=1, member_id=A)
  *    → lastReadMessageId = 100
@@ -48,8 +44,6 @@ import java.time.LocalDateTime;
  *    → lastReadMessageId = 105로 UPDATE
  *    → unread count = 0
  *
- * @author damoyeo
- * @since 2025-02-25
  */
 @Entity
 @Table(name = "chat_read", uniqueConstraints = {
@@ -137,16 +131,13 @@ public class ChatRead {
     @Builder.Default
     private LocalDateTime lastReadAt = LocalDateTime.now();
 
-    // ========================================================================
     // 변경 메서드
-    // ========================================================================
 
     /**
      * 읽음 상태 업데이트
      *
      * 회원이 채팅방에서 메시지를 읽었을 때 호출됩니다.
      *
-     * [사용 예시]
      * - 회원이 채팅방 진입 시: 최신 메시지 ID로 업데이트
      * - 회원이 채팅방에서 메시지 수신 시: 자동으로 읽음 처리
      *

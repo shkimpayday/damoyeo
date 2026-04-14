@@ -7,11 +7,8 @@ import com.damoyeo.api.global.common.dto.PageRequestDTO;
 import com.damoyeo.api.global.common.dto.PageResponseDTO;
 
 /**
- * ============================================================================
  * 알림 서비스 인터페이스
- * ============================================================================
  *
- * [역할]
  * 알림 관련 비즈니스 로직의 계약(contract)을 정의합니다.
  *
  * [왜 인터페이스를 분리하는가?]
@@ -25,7 +22,6 @@ import com.damoyeo.api.global.common.dto.PageResponseDTO;
  * - 알림 조회: 사용자별 알림 목록 조회
  * - 읽음 처리: 개별/전체 알림 읽음 처리
  *
- * [사용 위치]
  * - NotificationController에서 주입받아 사용
  * - NotificationServiceImpl에서 구현
  * - GroupServiceImpl, MeetingServiceImpl 등에서 알림 발송 시 사용
@@ -38,7 +34,6 @@ public interface NotificationService {
      * 새로운 알림을 생성하고 저장합니다.
      * 다른 서비스(GroupService, MeetingService 등)에서 호출합니다.
      *
-     * [사용 예시]
      * // 새 멤버 가입 시
      * notificationService.send(
      *     owner,

@@ -17,11 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ============================================================================
  * WebSocket JWT 인증 인터셉터
- * ============================================================================
  *
- * [역할]
  * WebSocket STOMP 연결 시 JWT 토큰을 검증하여 인증된 사용자만 연결을 허용합니다.
  *
  * [처리 흐름]
@@ -45,11 +42,8 @@ import java.util.Map;
  * - SEND, SUBSCRIBE 등은 이미 인증된 세션이므로 생략합니다.
  * - 토큰이 없거나 유효하지 않으면 IllegalArgumentException을 발생시켜 연결을 거부합니다.
  *
- * [사용 위치]
  * - WebSocketConfig.configureClientInboundChannel()
  *
- * @author damoyeo
- * @since 2025-02-25
  */
 @RequiredArgsConstructor
 @Slf4j

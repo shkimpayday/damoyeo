@@ -39,11 +39,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * ============================================================================
  * 갤러리 서비스 구현체
- * ============================================================================
  *
- * [역할]
  * 갤러리 게시물 관련 비즈니스 로직을 구현합니다.
  *
  * [구조 변경]
@@ -73,9 +70,7 @@ public class GalleryServiceImpl implements GalleryService {
     /** 한 번에 업로드 가능한 최대 이미지 수 */
     private static final int MAX_UPLOAD_COUNT = 10;
 
-    // ========================================================================
     // 게시물 관련 메서드
-    // ========================================================================
 
     /**
      * {@inheritDoc}
@@ -84,19 +79,15 @@ public class GalleryServiceImpl implements GalleryService {
     @Transactional
     public GalleryPostDTO uploadPost(Long groupId, List<MultipartFile> files,
                                       String caption, String email) {
-        // 1. 모임 조회
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException("모임을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 업로더 조회
         Member uploader = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         GroupMember membership = groupMemberRepository.findByGroupIdAndMemberId(groupId, uploader.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 게시물을 올릴 수 있습니다.", HttpStatus.FORBIDDEN));
 
-        // 4. 파일 개수 확인
         if (files == null || files.isEmpty()) {
             throw new CustomException("업로드할 파일이 없습니다.", HttpStatus.BAD_REQUEST);
         }
@@ -107,14 +98,12 @@ public class GalleryServiceImpl implements GalleryService {
             );
         }
 
-        // 5. 게시물 생성
         GalleryPost post = GalleryPost.builder()
                 .group(group)
                 .uploader(uploader)
                 .caption(caption)
                 .build();
 
-        // 6. 이미지 업로드 및 연결
         for (MultipartFile file : files) {
             // 파일 업로드
             String imageUrl = fileUploadUtil.uploadGalleryImage(file, groupId);
@@ -132,7 +121,6 @@ public class GalleryServiceImpl implements GalleryService {
             post.addImage(galleryImage);
         }
 
-        // 7. 저장
         GalleryPost saved = galleryPostRepository.save(post);
 
         log.info("Gallery post uploaded - groupId: {}, postId: {}, imageCount: {}, uploader: {}",
@@ -146,31 +134,25 @@ public class GalleryServiceImpl implements GalleryService {
      */
     @Override
     public PageResponseDTO<GalleryPostDTO> getGalleryPosts(Long groupId, int page, int size, String email) {
-        // 1. 모임 존재 확인
         if (!groupRepository.existsById(groupId)) {
             throw new CustomException("모임을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
         }
 
-        // 2. 조회자 정보
         Member viewer = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         GroupMember membership = groupMemberRepository.findByGroupIdAndMemberId(groupId, viewer.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 갤러리를 볼 수 있습니다.", HttpStatus.FORBIDDEN));
 
-        // 4. PageRequestDTO 생성 (PageResponseDTO 빌더에서 필요)
         // 프론트엔드에서 0-based로 요청하므로 1-based로 변환
         PageRequestDTO pageRequestDTO = PageRequestDTO.builder()
                 .page(page + 1)
                 .size(size)
                 .build();
 
-        // 5. 페이지네이션 조회
         Pageable pageable = PageRequest.of(page, size);
         Page<GalleryPost> postPage = galleryPostRepository.findByGroupIdOrderByCreatedAtDesc(groupId, pageable);
 
-        // 6. DTO 변환 (삭제 권한 계산, 좋아요/댓글 정보 포함)
         boolean isManager = membership.getRole() == GroupRole.OWNER
                 || membership.getRole() == GroupRole.MANAGER;
 
@@ -202,15 +184,12 @@ public class GalleryServiceImpl implements GalleryService {
     @Override
     @Transactional
     public void deletePost(Long postId, String email) {
-        // 1. 게시물 조회
         GalleryPost post = galleryPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시물을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 삭제 요청자 조회
         Member requester = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 권한 확인 (업로더 본인 또는 관리자)
         boolean isUploader = post.getUploader().getId().equals(requester.getId());
         boolean isManager = false;
 
@@ -229,18 +208,14 @@ public class GalleryServiceImpl implements GalleryService {
             throw new CustomException("게시물을 삭제할 권한이 없습니다.", HttpStatus.FORBIDDEN);
         }
 
-        // 4. 관련 좋아요 삭제
         galleryLikeRepository.deleteAllByPostId(postId);
 
-        // 5. 관련 댓글 삭제
         galleryCommentRepository.deleteAllByPostId(postId);
 
-        // 6. 이미지 파일 삭제
         for (GalleryImage image : post.getImages()) {
             fileUploadUtil.deleteFile(image.getImageUrl());
         }
 
-        // 7. DB 삭제 (cascade로 GalleryImage도 함께 삭제됨)
         galleryPostRepository.delete(post);
 
         log.info("Gallery post deleted - postId: {}, imageCount: {}, deletedBy: {}",
@@ -260,9 +235,7 @@ public class GalleryServiceImpl implements GalleryService {
                 .collect(Collectors.toList());
     }
 
-    // ========================================================================
     // 좋아요 관련 메서드
-    // ========================================================================
 
     /**
      * {@inheritDoc}
@@ -270,19 +243,15 @@ public class GalleryServiceImpl implements GalleryService {
     @Override
     @Transactional
     public boolean toggleLike(Long postId, String email) {
-        // 1. 게시물 조회
         GalleryPost post = galleryPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시물을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 사용자 조회
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         groupMemberRepository.findByGroupIdAndMemberId(post.getGroup().getId(), member.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 좋아요를 누를 수 있습니다.", HttpStatus.FORBIDDEN));
 
-        // 4. 좋아요 토글
         Optional<GalleryLike> existingLike = galleryLikeRepository.findByPostIdAndMemberId(postId, member.getId());
 
         if (existingLike.isPresent()) {
@@ -310,9 +279,7 @@ public class GalleryServiceImpl implements GalleryService {
         return galleryLikeRepository.countByPostId(postId);
     }
 
-    // ========================================================================
     // 댓글 관련 메서드
-    // ========================================================================
 
     /**
      * {@inheritDoc}
@@ -320,19 +287,15 @@ public class GalleryServiceImpl implements GalleryService {
     @Override
     @Transactional
     public GalleryCommentDTO addComment(Long postId, String content, String email) {
-        // 1. 게시물 조회
         GalleryPost post = galleryPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시물을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 작성자 조회
         Member writer = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         groupMemberRepository.findByGroupIdAndMemberId(post.getGroup().getId(), writer.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 댓글을 작성할 수 있습니다.", HttpStatus.FORBIDDEN));
 
-        // 4. 내용 검증
         if (content == null || content.trim().isEmpty()) {
             throw new CustomException("댓글 내용을 입력해주세요.", HttpStatus.BAD_REQUEST);
         }
@@ -340,7 +303,6 @@ public class GalleryServiceImpl implements GalleryService {
             throw new CustomException("댓글은 500자 이하로 작성해주세요.", HttpStatus.BAD_REQUEST);
         }
 
-        // 5. 댓글 생성
         GalleryComment comment = GalleryComment.builder()
                 .post(post)
                 .writer(writer)
@@ -358,21 +320,17 @@ public class GalleryServiceImpl implements GalleryService {
      */
     @Override
     public List<GalleryCommentDTO> getComments(Long postId, String email) {
-        // 1. 게시물 조회
         GalleryPost post = galleryPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시물을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 조회자 정보
         Member viewer = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         GroupMember membership = groupMemberRepository.findByGroupIdAndMemberId(post.getGroup().getId(), viewer.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 댓글을 볼 수 있습니다.", HttpStatus.FORBIDDEN));
 
         boolean isManager = membership.getRole() == GroupRole.OWNER || membership.getRole() == GroupRole.MANAGER;
 
-        // 4. 댓글 목록 조회
         List<GalleryComment> comments = galleryCommentRepository.findByPostIdWithWriter(postId);
 
         return comments.stream()
@@ -389,15 +347,12 @@ public class GalleryServiceImpl implements GalleryService {
     @Override
     @Transactional
     public void deleteComment(Long commentId, String email) {
-        // 1. 댓글 조회
         GalleryComment comment = galleryCommentRepository.findByIdWithDetails(commentId)
                 .orElseThrow(() -> new CustomException("댓글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 삭제 요청자 조회
         Member requester = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 권한 확인 (작성자 본인 또는 관리자)
         boolean isWriter = comment.getWriter().getId().equals(requester.getId());
         boolean isManager = false;
 
@@ -416,14 +371,11 @@ public class GalleryServiceImpl implements GalleryService {
             throw new CustomException("댓글을 삭제할 권한이 없습니다.", HttpStatus.FORBIDDEN);
         }
 
-        // 4. 삭제
         galleryCommentRepository.delete(comment);
         log.info("Gallery comment deleted - commentId: {}, deletedBy: {}", commentId, email);
     }
 
-    // ========================================================================
     // DTO 변환 메서드
-    // ========================================================================
 
     /**
      * 게시물 엔티티를 DTO로 변환

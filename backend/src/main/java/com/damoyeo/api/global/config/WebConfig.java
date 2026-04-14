@@ -7,9 +7,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * ============================================================================
  * Spring MVC 웹 설정 클래스
- * ============================================================================
  *
  * [이 클래스의 역할]
  * Spring MVC 관련 추가 설정을 정의합니다.

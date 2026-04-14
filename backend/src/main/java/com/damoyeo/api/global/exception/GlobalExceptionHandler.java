@@ -13,9 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ============================================================================
  * 전역 예외 처리 핸들러
- * ============================================================================
  *
  * [이 클래스의 역할]
  * 애플리케이션 전체에서 발생하는 예외를 한 곳에서 처리합니다.
@@ -45,7 +43,6 @@ public class GlobalExceptionHandler {
      * Service나 Controller에서 의도적으로 던진 예외를 처리합니다.
      * CustomException에 지정된 HTTP 상태 코드와 메시지를 그대로 반환합니다.
      *
-     * [사용 예시]
      * Service: throw CustomException.notFound("모임을 찾을 수 없습니다")
      * 응답: HTTP 404 { "error": "모임을 찾을 수 없습니다" }
      *

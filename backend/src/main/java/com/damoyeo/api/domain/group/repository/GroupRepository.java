@@ -12,11 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * ============================================================================
  * 모임(Group) Repository
- * ============================================================================
  *
- * [역할]
  * 모임 엔티티의 데이터베이스 접근을 담당합니다.
  *
  * [상속]
@@ -32,7 +29,6 @@ import java.util.Optional;
  * 대부분의 쿼리에서 left join fetch를 사용하여
  * 연관 엔티티를 한 번의 쿼리로 함께 조회합니다.
  *
- * [사용 위치]
  * - GroupServiceImpl: 모임 비즈니스 로직
  */
 public interface GroupRepository extends JpaRepository<Group, Long> {
@@ -302,9 +298,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
             @Param("categoryId") Long categoryId,
             Pageable pageable);
 
-    // ========================================================================
     // 관리자용 쿼리
-    // ========================================================================
 
     /**
      * 상태별 모임 수 집계
@@ -366,9 +360,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
             "left join fetch g.owner")
     Page<Group> findAllAdmin(Pageable pageable);
 
-    // ========================================================================
     // 프리미엄 기능용 쿼리
-    // ========================================================================
 
     /**
      * 회원이 소유한 모임 수 집계

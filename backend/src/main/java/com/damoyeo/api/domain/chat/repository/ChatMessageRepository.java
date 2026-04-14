@@ -8,11 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /**
- * ============================================================================
  * 채팅 메시지 Repository
- * ============================================================================
  *
- * [역할]
  * 채팅 메시지 엔티티의 데이터베이스 접근을 담당합니다.
  *
  * [상속]
@@ -24,12 +21,9 @@ import org.springframework.data.repository.query.Param;
  * - JPQL: 엔티티 기반 쿼리
  * - fetch join: N+1 문제 방지 (sender 정보 함께 조회)
  *
- * [사용 위치]
  * - ChatServiceImpl: 메시지 저장, 조회, unread count 계산
  * - ChatController: REST API 엔드포인트
  *
- * @author damoyeo
- * @since 2025-02-25
  */
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
@@ -130,9 +124,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
      */
     long countByGroupId(Long groupId);
 
-    // ========================================================================
     // 정모 채팅 관련 쿼리
-    // ========================================================================
 
     /**
      * 정모별 메시지 히스토리 조회 (페이지네이션)

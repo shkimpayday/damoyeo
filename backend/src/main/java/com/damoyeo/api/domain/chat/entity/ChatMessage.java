@@ -8,11 +8,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * ============================================================================
  * 채팅 메시지 엔티티
- * ============================================================================
  *
- * [역할]
  * 모임 내에서 주고받는 채팅 메시지를 저장합니다.
  * 실시간으로 WebSocket을 통해 전송되지만, 이후 조회를 위해 DB에도 저장됩니다.
  *
@@ -28,13 +25,10 @@ import lombok.*;
  * - (group_id, created_at): 모임 채팅 히스토리 조회 시 성능 향상
  * - (meeting_id, created_at): 정모 채팅 히스토리 조회 시 성능 향상
  *
- * [사용 위치]
  * - ChatController: 메시지 히스토리 REST API
  * - ChatController.sendMessage: WebSocket 메시지 전송 (@MessageMapping)
  * - ChatService: 메시지 저장, 조회, 검증 비즈니스 로직
  *
- * @author damoyeo
- * @since 2025-02-25
  */
 @Entity
 @Table(name = "chat_message", indexes = {
@@ -131,19 +125,14 @@ public class ChatMessage extends BaseEntity {
      */
     private String imageUrl;
 
-    // ========================================================================
     // BaseEntity 상속 필드
-    // ========================================================================
     // - createdAt: LocalDateTime (메시지 전송 시각)
     // - modifiedAt: LocalDateTime (메시지 수정 시각, 현재는 미사용)
     //
     // @CreatedDate, @LastModifiedDate로 자동 관리됩니다.
     // DamoyeoApplication.java에 @EnableJpaAuditing 설정 필요
-    // ========================================================================
 
-    // ========================================================================
     // 비즈니스 메서드
-    // ========================================================================
 
     /**
      * 메시지 내용 수정 (Phase 3 확장 기능)

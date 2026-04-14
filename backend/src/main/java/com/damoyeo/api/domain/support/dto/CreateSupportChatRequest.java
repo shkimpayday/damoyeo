@@ -7,12 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * ============================================================================
  * 상담 생성 요청 DTO
- * ============================================================================
  *
- * @author damoyeo
- * @since 2025-03-16
  */
 @Data
 @AllArgsConstructor

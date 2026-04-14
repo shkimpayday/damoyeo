@@ -27,31 +27,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * ============================================================================
- * 정모 서비스 구현체
- * ============================================================================
- *
- * [역할]
- * MeetingService 인터페이스의 실제 구현을 담당합니다.
- * 정모 관련 비즈니스 로직을 처리합니다.
- *
- * [주요 기능]
- * - 정모 CRUD (생성, 조회, 수정, 취소)
- * - 정모 목록 조회 (모임별, 다가오는, 내 정모)
- * - 참석 관리 (등록, 취소, 목록 조회)
- *
- * [트랜잭션 정책]
- * - 클래스 레벨 @Transactional: 모든 메서드에 트랜잭션 적용
- * - 조회 메서드: @Transactional(readOnly = true)로 성능 최적화
- *
- * [사용 위치]
- * - MeetingController에서 주입받아 사용
- *
- * [Spring 어노테이션 설명]
- * - @Service: 서비스 계층 빈으로 등록
- * - @RequiredArgsConstructor: final 필드 생성자 자동 생성 (DI)
- * - @Transactional: 트랜잭션 관리
- * - @Slf4j: 로깅
+ * 정모 서비스 구현체.
+ * 정모 CRUD, 목록 조회, 참석 관리를 처리한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,31 +36,21 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MeetingServiceImpl implements MeetingService {
 
-    // ========================================================================
-    // 의존성 주입 (DI)
-    // ========================================================================
 
-    /** 정모 레포지토리 */
     private final MeetingRepository meetingRepository;
 
-    /** 정모 참석자 레포지토리 */
     private final MeetingAttendeeRepository attendeeRepository;
 
-    /** 모임 레포지토리 (모임 존재 여부 확인용) */
     private final GroupRepository groupRepository;
 
     /** 모임 멤버 레포지토리 (권한 확인용) */
     private final GroupMemberRepository groupMemberRepository;
 
-    /** 회원 레포지토리 (이메일로 회원 조회) */
     private final MemberRepository memberRepository;
 
-    /** 알림 서비스 (정모 관련 알림 발송) */
     private final NotificationService notificationService;
 
-    // ========================================================================
     // CRUD 기본 기능
-    // ========================================================================
 
     /**
      * 정모 생성
@@ -99,17 +66,13 @@ public class MeetingServiceImpl implements MeetingService {
      */
     @Override
     public MeetingDTO create(String email, MeetingCreateRequest request) {
-        // 1. 회원 조회
         Member creator = getMemberByEmail(email);
 
-        // 2. 모임 조회 및 존재 여부 확인
         Group group = groupRepository.findByIdWithDetails(request.getGroupId())
                 .orElseThrow(() -> CustomException.notFound("모임을 찾을 수 없습니다."));
 
-        // 3. 모임 멤버인지 확인 (승인된 멤버만 정모 생성 가능)
         checkGroupMember(group.getId(), creator.getId());
 
-        // 4. 정모 엔티티 생성
         Meeting meeting = Meeting.builder()
                 .group(group)
                 .title(request.getTitle())
@@ -123,10 +86,8 @@ public class MeetingServiceImpl implements MeetingService {
                 .creator(creator)
                 .build();
 
-        // 5. 정모 저장
         Meeting saved = meetingRepository.save(meeting);
 
-        // 6. 생성자를 자동으로 참석 등록
         //    정모를 만든 사람은 자동으로 참석하는 것이 자연스러움
         MeetingAttendee creatorAttendee = MeetingAttendee.builder()
                 .meeting(saved)
@@ -135,7 +96,6 @@ public class MeetingServiceImpl implements MeetingService {
                 .build();
         attendeeRepository.save(creatorAttendee);
 
-        // 7. 모임 전체 멤버에게 새 정모 알림 발송 (생성자 제외)
         sendNewMeetingNotification(group, saved, creator);
 
         log.info("Meeting created: {} by {}", saved.getTitle(), email);
@@ -181,14 +141,11 @@ public class MeetingServiceImpl implements MeetingService {
      */
     @Override
     public MeetingDTO modify(Long id, String email, MeetingModifyRequest request) {
-        // 1. 정모 조회
         Meeting meeting = meetingRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> CustomException.notFound("정모를 찾을 수 없습니다."));
 
-        // 2. 권한 확인 (생성자 또는 모임 관리자)
         checkMeetingManager(meeting, email);
 
-        // 3. 장소/시간 변경 여부 추적 (알림 발송 여부 결정용)
         boolean isLocationOrTimeChanged = false;
         if (request.getAddress() != null && !request.getAddress().equals(meeting.getLocation())) {
             isLocationOrTimeChanged = true;
@@ -197,7 +154,6 @@ public class MeetingServiceImpl implements MeetingService {
             isLocationOrTimeChanged = true;
         }
 
-        // 4. Partial Update: null이 아닌 필드만 업데이트
         if (request.getTitle() != null) {
             meeting.changeTitle(request.getTitle());
         }
@@ -220,12 +176,10 @@ public class MeetingServiceImpl implements MeetingService {
             meeting.changeStatus(MeetingStatus.valueOf(request.getStatus()));
         }
 
-        // 5. 장소/시간이 변경된 경우 참석 예정자에게 알림 발송
         if (isLocationOrTimeChanged) {
             sendMeetingUpdatedNotification(meeting);
         }
 
-        // 6. JPA 더티 체킹으로 자동 저장 (save() 호출 불필요)
         return entityToDTO(meeting, email);
     }
 
@@ -255,9 +209,7 @@ public class MeetingServiceImpl implements MeetingService {
         log.info("Meeting cancelled: {} by {}", meeting.getTitle(), email);
     }
 
-    // ========================================================================
     // 목록 조회
-    // ========================================================================
 
     /**
      * 특정 모임의 정모 목록 조회 (전체)
@@ -351,9 +303,7 @@ public class MeetingServiceImpl implements MeetingService {
                 .collect(Collectors.toList());
     }
 
-    // ========================================================================
     // 참석 관리
-    // ========================================================================
 
     /**
      * 정모 참석 등록
@@ -373,18 +323,14 @@ public class MeetingServiceImpl implements MeetingService {
      */
     @Override
     public void attend(Long meetingId, String email, String status) {
-        // 1. 정모 조회
         Meeting meeting = meetingRepository.findByIdWithDetails(meetingId)
                 .orElseThrow(() -> CustomException.notFound("정모를 찾을 수 없습니다."));
         Member member = getMemberByEmail(email);
 
-        // 2. 모임 멤버인지 확인 (승인된 멤버만 참석 가능)
         checkGroupMember(meeting.getGroup().getId(), member.getId());
 
-        // 3. 참석 상태 파싱 (기본값: ATTENDING)
         AttendStatus attendStatus = status != null ? AttendStatus.valueOf(status) : AttendStatus.ATTENDING;
 
-        // 4. 이미 등록했는지 확인 (중복 등록 방지)
         var existing = attendeeRepository.findByMeetingIdAndMemberId(meetingId, member.getId());
         if (existing.isPresent()) {
             // 이미 등록한 경우: 상태만 변경
@@ -393,7 +339,6 @@ public class MeetingServiceImpl implements MeetingService {
             return;
         }
 
-        // 5. 정원 확인 (ATTENDING인 경우만)
         //    MAYBE, NOT_ATTENDING은 정원에 포함되지 않음
         if (attendStatus == AttendStatus.ATTENDING) {
             int currentCount = meetingRepository.countAttendees(meetingId);
@@ -402,7 +347,6 @@ public class MeetingServiceImpl implements MeetingService {
             }
         }
 
-        // 6. 새 참석 정보 등록
         MeetingAttendee attendee = MeetingAttendee.builder()
                 .meeting(meeting)
                 .member(member)
@@ -451,9 +395,7 @@ public class MeetingServiceImpl implements MeetingService {
                 .collect(Collectors.toList());
     }
 
-    // ========================================================================
     // Helper 메서드 (private)
-    // ========================================================================
 
     /**
      * 이메일로 회원 조회
@@ -503,12 +445,10 @@ public class MeetingServiceImpl implements MeetingService {
     private void checkMeetingManager(Meeting meeting, String email) {
         Member member = getMemberByEmail(email);
 
-        // 1. 정모 생성자인지 확인
         if (meeting.getCreator().getEmail().equals(email)) {
             return;  // 생성자는 항상 권한 있음
         }
 
-        // 2. 모임 관리자인지 확인 (OWNER 또는 MANAGER)
         GroupMember gm = groupMemberRepository.findByGroupIdAndMemberId(meeting.getGroup().getId(), member.getId())
                 .orElseThrow(() -> CustomException.forbidden("권한이 없습니다."));
 
@@ -597,12 +537,10 @@ public class MeetingServiceImpl implements MeetingService {
      * @return 수정 권한이 있으면 true, 없으면 false
      */
     private boolean calculateCanEdit(Meeting meeting, Member member) {
-        // 1. 정모 생성자인지 확인
         if (meeting.getCreator().getId().equals(member.getId())) {
             return true;
         }
 
-        // 2. 모임 관리자인지 확인 (OWNER 또는 MANAGER)
         return groupMemberRepository.findByGroupIdAndMemberId(meeting.getGroup().getId(), member.getId())
                 .map(gm -> gm.getRole() == GroupRole.OWNER || gm.getRole() == GroupRole.MANAGER)
                 .orElse(false);
@@ -623,9 +561,7 @@ public class MeetingServiceImpl implements MeetingService {
                 .build();
     }
 
-    // ========================================================================
     // 알림 발송 Helper 메서드
-    // ========================================================================
 
     /**
      * 새 정모 생성 알림 발송

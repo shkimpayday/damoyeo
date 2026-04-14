@@ -32,24 +32,18 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * ============================================================================
  * 모임 서비스 구현체
- * ============================================================================
  *
- * [역할]
  * 모임 관련 모든 비즈니스 로직을 구현합니다.
  *
- * [어노테이션 설명]
  * @Service: Spring 빈으로 등록 (서비스 계층)
  * @RequiredArgsConstructor: final 필드에 대한 생성자 자동 생성 (의존성 주입)
  * @Transactional: 모든 public 메서드에 트랜잭션 적용
  * @Slf4j: 로깅을 위한 log 객체 자동 생성
  *
- * [트랜잭션 전략]
  * - 기본: @Transactional (쓰기 작업)
  * - 조회만: @Transactional(readOnly = true) (성능 최적화)
  *
- * [사용하는 Repository]
  * - GroupRepository: 모임 CRUD
  * - GroupMemberRepository: 멤버십 관리
  * - MemberRepository: 회원 조회
@@ -68,9 +62,7 @@ public class GroupServiceImpl implements GroupService {
     private final FileUploadUtil fileUploadUtil;
     private final NotificationService notificationService;
 
-    // ========================================================================
     // 프리미엄 회원 제한 상수
-    // ========================================================================
 
     /** 일반 회원 모임 생성 제한 (2개) */
     private static final int NORMAL_GROUP_LIMIT = 2;
@@ -78,9 +70,7 @@ public class GroupServiceImpl implements GroupService {
     /** 일반 회원 모임 인원 제한 (30명) */
     private static final int NORMAL_MEMBER_LIMIT = 30;
 
-    // ========================================================================
     // CRUD 기본 기능
-    // ========================================================================
 
     /**
      * 모임 생성
@@ -98,14 +88,11 @@ public class GroupServiceImpl implements GroupService {
      */
     @Override
     public GroupDTO create(String email, GroupCreateRequest request) {
-        // 1. 모임장이 될 회원 조회 (권한 정보 포함)
         Member owner = memberRepository.getWithRoles(email)
                 .orElseThrow(() -> CustomException.notFound("회원을 찾을 수 없습니다."));
 
-        // 2. 프리미엄 회원 여부 확인
         boolean isPremium = owner.getMemberRoleList().contains(MemberRole.PREMIUM);
 
-        // 3. 일반 회원 모임 생성 제한 확인 (2개)
         if (!isPremium) {
             int ownedGroupCount = groupRepository.countOwnedGroups(owner.getId());
             if (ownedGroupCount >= NORMAL_GROUP_LIMIT) {
@@ -117,7 +104,6 @@ public class GroupServiceImpl implements GroupService {
             }
         }
 
-        // 4. 일반 회원 모임 인원 제한 확인 (30명)
         int maxMembers = request.getMaxMembers();
         if (!isPremium && maxMembers > NORMAL_MEMBER_LIMIT) {
             throw new CustomException(
@@ -127,11 +113,9 @@ public class GroupServiceImpl implements GroupService {
             );
         }
 
-        // 5. 카테고리 확인
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> CustomException.notFound("카테고리를 찾을 수 없습니다."));
 
-        // 6. 모임 엔티티 생성
         Group group = Group.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -147,7 +131,6 @@ public class GroupServiceImpl implements GroupService {
 
         Group saved = groupRepository.save(group);
 
-        // 4. 모임장을 멤버로 자동 등록
         // - role: OWNER (모임장)
         // - status: APPROVED (즉시 승인)
         GroupMember ownerMember = GroupMember.builder()
@@ -289,9 +272,7 @@ public class GroupServiceImpl implements GroupService {
         log.info("Group deleted: {} by {}", group.getName(), email);
     }
 
-    // ========================================================================
     // 목록 조회
-    // ========================================================================
 
     /**
      * 모임 목록 조회 (페이지네이션 + 검색 + 정렬)
@@ -426,9 +407,7 @@ public class GroupServiceImpl implements GroupService {
                 .collect(Collectors.toList());
     }
 
-    // ========================================================================
     // 멤버 관리
-    // ========================================================================
 
     /**
      * 모임 가입
@@ -445,18 +424,15 @@ public class GroupServiceImpl implements GroupService {
                 .orElseThrow(() -> CustomException.notFound("모임을 찾을 수 없습니다."));
         Member member = getMemberByEmail(email);
 
-        // 1. 중복 가입 확인
         if (groupMemberRepository.existsByGroupIdAndMemberId(groupId, member.getId())) {
             throw new CustomException("이미 멤버입니다.", HttpStatus.BAD_REQUEST);
         }
 
-        // 2. 정원 확인
         int currentCount = groupMemberRepository.countApprovedMembers(groupId);
         if (currentCount >= group.getMaxMembers()) {
             throw new CustomException("모임 정원이 가득 찼습니다.", HttpStatus.BAD_REQUEST);
         }
 
-        // 3. GroupMember 생성 (즉시 가입)
         GroupMember groupMember = GroupMember.builder()
                 .group(group)
                 .member(member)
@@ -598,9 +574,7 @@ public class GroupServiceImpl implements GroupService {
                 .collect(Collectors.toList());
     }
 
-    // ========================================================================
     // 헬퍼 메서드 (private)
-    // ========================================================================
 
     /**
      * 이메일로 회원 조회

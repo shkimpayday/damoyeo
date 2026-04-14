@@ -6,9 +6,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * ============================================================================
  * 다모여 애플리케이션의 메인 진입점 (Entry Point)
- * ============================================================================
  *
  * 이 클래스는 Spring Boot 애플리케이션을 시작하는 역할을 합니다.
  * Java의 main() 메서드처럼, Spring Boot 앱도 여기서 시작됩니다.

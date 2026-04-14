@@ -1,11 +1,8 @@
 package com.damoyeo.api.domain.group.entity;
 
 /**
- * ============================================================================
  * 모임 내 역할 Enum
- * ============================================================================
  *
- * [역할]
  * 회원이 특정 모임 내에서 가지는 역할을 정의합니다.
  *
  * [MemberRole과의 차이점]
@@ -20,7 +17,6 @@ package com.damoyeo.api.domain.group.entity;
  * - "러닝 크루" 모임에서는 OWNER (GroupRole)
  * - "독서 모임"에서는 MEMBER (GroupRole)
  *
- * [사용 위치]
  * - GroupMember 엔티티의 role 필드
  * - GroupService에서 권한 검사 시
  *

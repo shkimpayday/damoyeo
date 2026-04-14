@@ -12,9 +12,7 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 /**
- * ============================================================================
  * WebSocket & STOMP 설정
- * ============================================================================
  *
  * [STOMP란?]
  * Simple Text Oriented Messaging Protocol
@@ -62,8 +60,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * - Production: RabbitMQ, ActiveMQ 같은 외부 브로커 사용 권장 (다중 서버 환경)
  * - 현재: Simple Broker (메모리 기반, 단일 서버 환경용)
  *
- * @author damoyeo
- * @since 2025-02-25
  */
 @Configuration
 @EnableWebSocketMessageBroker

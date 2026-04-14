@@ -4,9 +4,7 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 /**
- * ============================================================================
  * 커스텀 예외 클래스
- * ============================================================================
  *
  * [이 클래스의 역할]
  * 비즈니스 로직에서 발생하는 예외를 표준화된 형태로 처리합니다.
@@ -70,7 +68,6 @@ public class CustomException extends RuntimeException {
      *
      * 요청한 리소스를 찾을 수 없을 때 사용합니다.
      *
-     * [사용 예시]
      * throw CustomException.notFound("해당 모임이 존재하지 않습니다");
      * throw CustomException.notFound("회원을 찾을 수 없습니다");
      *
@@ -86,7 +83,6 @@ public class CustomException extends RuntimeException {
      *
      * 클라이언트의 요청이 잘못되었을 때 사용합니다.
      *
-     * [사용 예시]
      * throw CustomException.badRequest("이미 가입된 이메일입니다");
      * throw CustomException.badRequest("비밀번호가 일치하지 않습니다");
      *
@@ -102,7 +98,6 @@ public class CustomException extends RuntimeException {
      *
      * 인증이 필요한 요청인데 인증되지 않았을 때 사용합니다.
      *
-     * [사용 예시]
      * throw CustomException.unauthorized("로그인이 필요합니다");
      * throw CustomException.unauthorized("토큰이 만료되었습니다");
      *
@@ -122,7 +117,6 @@ public class CustomException extends RuntimeException {
      * - 401: "당신이 누구인지 모르겠어요" (로그인 안 됨)
      * - 403: "당신이 누구인지는 알지만, 권한이 없어요"
      *
-     * [사용 예시]
      * throw CustomException.forbidden("모임장만 수정할 수 있습니다");
      * throw CustomException.forbidden("해당 모임의 멤버가 아닙니다");
      *

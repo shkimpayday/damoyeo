@@ -11,11 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ============================================================================
  * 정모(Meeting) 엔티티
- * ============================================================================
  *
- * [역할]
  * 모임 내에서 진행되는 정기/비정기 오프라인 모임을 표현합니다.
  * 소모임(somoim.co.kr)의 "정모"와 유사한 개념입니다.
  *
@@ -28,7 +25,6 @@ import java.util.List;
  * - creator (N:1) → Member: 정모를 만든 사람
  * - attendees (1:N) → MeetingAttendee: 참석자 목록
  *
- * [사용 위치]
  * - MeetingController: 정모 CRUD API
  * - MeetingService: 정모 비즈니스 로직
  *
@@ -78,9 +74,7 @@ public class Meeting extends BaseEntity {
     @Column(length = 2000)
     private String description;
 
-    // ========================================================================
     // 위치 정보
-    // ========================================================================
 
     /**
      * 정모 장소 (주소)
@@ -166,9 +160,7 @@ public class Meeting extends BaseEntity {
     @Builder.Default
     private List<MeetingAttendee> attendees = new ArrayList<>();
 
-    // ========================================================================
     // 변경 메서드
-    // ========================================================================
 
     /** 정모 제목 변경 */
     public void changeTitle(String title) {

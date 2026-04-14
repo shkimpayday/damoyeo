@@ -10,21 +10,16 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * ============================================================================
  * 정모 참석자(MeetingAttendee) 레포지토리
- * ============================================================================
  *
- * [역할]
  * MeetingAttendee 엔티티의 데이터베이스 접근을 담당합니다.
  * 정모와 회원 간의 N:M 관계를 관리합니다.
  *
- * [주요 기능]
  * - 정모의 전체 참석자 목록 조회
  * - 상태별 참석자 목록 조회 (ATTENDING, MAYBE, NOT_ATTENDING)
  * - 특정 회원의 참석 정보 조회
  * - 중복 참석 등록 확인
  *
- * [사용 위치]
  * - MeetingServiceImpl에서 주입받아 사용
  *
  * [N+1 문제 방지]
@@ -107,9 +102,7 @@ public interface MeetingAttendeeRepository extends JpaRepository<MeetingAttendee
      */
     boolean existsByMeetingIdAndMemberId(Long meetingId, Long memberId);
 
-    // ========================================================================
     // 정모 채팅 권한 확인
-    // ========================================================================
 
     /**
      * 회원이 정모에 참석 예정인지 확인

@@ -10,19 +10,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * ============================================================================
  * 모임-회원 관계(GroupMember) Repository
- * ============================================================================
  *
- * [역할]
  * 모임과 회원 간의 관계(멤버십)를 관리하는 데이터 접근 계층입니다.
  *
- * [주요 기능]
  * - 특정 모임의 멤버 목록 조회
  * - 특정 회원이 가입한 모임 목록 조회
  * - 멤버 수 집계
  *
- * [사용 위치]
  * - GroupServiceImpl: 가입/탈퇴/강퇴 처리
  * - MeetingServiceImpl: 정모 참석 자격 확인
  */
@@ -55,7 +50,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      * [용도]
      * 회원이 특정 모임에 가입되어 있는지, 어떤 역할인지 확인합니다.
      *
-     * [사용 예시]
      * - 가입 전: 이미 가입되어 있는지 확인
      * - 권한 검사: 멤버인지, 역할이 무엇인지 확인
      *
@@ -98,7 +92,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      * [용도]
      * 모임의 현재 멤버 수를 계산합니다.
      *
-     * [사용 예시]
      * - 가입 시: 정원(maxMembers) 초과 여부 확인
      * - 모임 목록 표시: "멤버 15명" 형태로 표시
      *
@@ -123,7 +116,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      * - COUNT 대신 EXISTS를 사용하여 성능 최적화
      * - Spring Data JPA가 자동으로 쿼리 생성
      *
-     * [사용 예시]
      * - 가입 버튼 활성화/비활성화 결정
      * - 이미 가입한 사용자에게 "탈퇴" 버튼 표시
      *
@@ -135,9 +127,7 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      */
     boolean existsByGroupIdAndMemberId(Long groupId, Long memberId);
 
-    // ========================================================================
     // 관리자용 쿼리
-    // ========================================================================
 
     /**
      * 회원이 가입한 모임 수 집계

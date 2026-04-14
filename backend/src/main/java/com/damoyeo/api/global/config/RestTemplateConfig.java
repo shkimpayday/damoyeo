@@ -8,11 +8,8 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 
 /**
- * ============================================================================
  * RestTemplate 설정
- * ============================================================================
  *
- * [역할]
  * 외부 API 호출용 RestTemplate 빈을 제공합니다.
  *
  * [사용처]

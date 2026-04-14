@@ -8,11 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * ============================================================================
  * 메시지 전송 요청 DTO
- * ============================================================================
  *
- * [역할]
  * 클라이언트가 WebSocket을 통해 메시지를 전송할 때 사용하는 요청 객체입니다.
  *
  * [검증]
@@ -20,7 +17,6 @@ import lombok.NoArgsConstructor;
  * - @NotBlank: null, 빈 문자열, 공백만 있는 문자열 모두 차단
  * - @Size: 메시지 길이 제한 (최대 2000자)
  *
- * [사용 위치]
  * - ChatController.sendMessage (@MessageMapping)
  * - WebSocket STOMP 메시지의 body로 전달됩니다.
  *
@@ -40,8 +36,6 @@ import lombok.NoArgsConstructor;
  * 3. 너무 긴 메시지 (2000자 초과)
  *    { "message": "..." } → 400 Bad Request
  *
- * @author damoyeo
- * @since 2025-02-25
  */
 @Data
 @Builder

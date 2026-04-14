@@ -7,15 +7,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * ============================================================================
  * 상담 메시지 전송 요청 DTO
- * ============================================================================
  *
  * [용도]
  * WebSocket 또는 REST API로 상담 메시지를 전송할 때 사용합니다.
  *
- * @author damoyeo
- * @since 2025-03-16
  */
 @Data
 @AllArgsConstructor

@@ -9,11 +9,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * ============================================================================
  * 모임 수정 요청 DTO
- * ============================================================================
  *
- * [역할]
  * 모임 정보 수정 폼에서 전송된 데이터를 담는 객체입니다.
  *
  * [GroupCreateRequest와의 차이점]
@@ -29,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
  *   "maxMembers": 100            // 정원 변경
  * }
  *
- * [사용 위치]
  * - GroupController.modify()의 @RequestBody
  * - GroupServiceImpl.modify()에서 null 체크 후 선택적 업데이트
  */
@@ -75,9 +71,7 @@ public class GroupModifyRequest {
      */
     private MultipartFile coverImageFile;
 
-    // ========================================================================
     // 위치 정보
-    // ========================================================================
 
     /**
      * 모임 주소 (선택)

@@ -10,11 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * ============================================================================
  * 이벤트 레포지토리
- * ============================================================================
  *
- * [역할]
  * Event 엔티티의 데이터베이스 접근을 담당합니다.
  * JpaRepository를 상속받아 기본 CRUD와 커스텀 쿼리를 제공합니다.
  *
@@ -22,7 +19,6 @@ import java.util.List;
  * - 활성화된 배너 목록 조회 (메인 페이지 슬라이더용)
  * - 전체 이벤트 목록 조회 (관리자용)
  *
- * [사용 위치]
  * - EventServiceImpl
  * - DataInitializer (초기 데이터 생성)
  */
@@ -39,7 +35,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
      *
      * displayOrder 오름차순으로 정렬합니다.
      *
-     * [사용 위치]
      * EventServiceImpl.getActiveBanners()
      *
      * [프론트엔드 호출]

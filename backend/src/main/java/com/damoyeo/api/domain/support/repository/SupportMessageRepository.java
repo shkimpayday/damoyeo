@@ -10,12 +10,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 /**
- * ============================================================================
  * 상담 메시지 Repository
- * ============================================================================
  *
- * @author damoyeo
- * @since 2025-03-16
  */
 public interface SupportMessageRepository extends JpaRepository<SupportMessage, Long> {
 

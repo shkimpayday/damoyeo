@@ -33,11 +33,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * ============================================================================
  * 결제 서비스 구현체
- * ============================================================================
  *
- * [역할]
  * 카카오페이 결제 연동 및 프리미엄 회원 관리 비즈니스 로직을 구현합니다.
  *
  * [카카오페이 API 흐름]
@@ -99,9 +96,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${kakao.pay.test-mode:false}")
     private boolean testMode;
 
-    // ========================================================================
     // 카카오페이 결제 프로세스
-    // ========================================================================
 
     /**
      * 결제 준비 (카카오페이 ready API 호출)
@@ -118,11 +113,9 @@ public class PaymentServiceImpl implements PaymentService {
     public KakaoPayReadyResponse ready(String email, KakaoPayReadyRequest request) {
         log.info("결제 준비 시작: email={}, paymentType={}, testMode={}", email, request.getPaymentType(), testMode);
 
-        // 1. 회원 조회
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다: " + email));
 
-        // 2. 이미 활성 프리미엄이 있는지 확인
         Optional<Payment> activePremium = paymentRepository.findLatestActivePremium(
                 member.getId(), LocalDateTime.now());
         if (activePremium.isPresent()) {
@@ -133,10 +126,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         PaymentType paymentType = request.getPaymentType();
 
-        // 3. 주문번호 생성 (PAY_{memberId}_{timestamp})
         String orderId = "PAY_" + member.getId() + "_" + System.currentTimeMillis();
 
-        // 4. Payment 엔티티 생성
         Payment payment = Payment.builder()
                 .member(member)
                 .paymentType(paymentType)
@@ -147,7 +138,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentRepository.save(payment);
 
-        // 5. 테스트 모드: 카카오페이 API 호출 없이 바로 성공 URL 반환
         if (testMode) {
             log.info("테스트 모드: 카카오페이 API 호출 생략, orderId={}", orderId);
             String testTid = "TEST_TID_" + System.currentTimeMillis();
@@ -164,7 +154,6 @@ public class PaymentServiceImpl implements PaymentService {
             return testResponse;
         }
 
-        // 6. 실제 카카오페이 ready API 호출
         HttpHeaders headers = createKakaoPayHeaders();
 
         Map<String, String> params = new HashMap<>();
@@ -221,7 +210,6 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentDTO approve(String email, String pgToken, String orderId) {
         log.info("결제 승인 시작: email={}, orderId={}, testMode={}", email, orderId, testMode);
 
-        // 1. 주문번호로 Payment 조회
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("결제 정보를 찾을 수 없습니다: " + orderId));
 
@@ -236,7 +224,6 @@ public class PaymentServiceImpl implements PaymentService {
             return toPaymentDTO(payment);
         }
 
-        // 2. 테스트 모드: 카카오페이 API 호출 없이 바로 승인 처리
         if (testMode) {
             log.info("테스트 모드: 카카오페이 approve API 호출 생략, orderId={}", orderId);
 
@@ -254,7 +241,6 @@ public class PaymentServiceImpl implements PaymentService {
             return toPaymentDTO(payment);
         }
 
-        // 3. 실제 카카오페이 approve API 호출
         HttpHeaders headers = createKakaoPayHeaders();
 
         Map<String, String> params = new HashMap<>();
@@ -331,9 +317,7 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("결제 실패 처리 완료: orderId={}", orderId);
     }
 
-    // ========================================================================
     // 결제 내역 조회
-    // ========================================================================
 
     /**
      * 내 결제 내역 조회
@@ -377,9 +361,7 @@ public class PaymentServiceImpl implements PaymentService {
         return toPaymentDTO(payment);
     }
 
-    // ========================================================================
     // 프리미엄 상태 관리
-    // ========================================================================
 
     /**
      * 프리미엄 상태 확인
@@ -425,9 +407,7 @@ public class PaymentServiceImpl implements PaymentService {
                 member.getId(), LocalDateTime.now()).isPresent();
     }
 
-    // ========================================================================
     // 관리자 기능
-    // ========================================================================
 
     /**
      * 전체 결제 내역 조회 (관리자용)
@@ -480,9 +460,7 @@ public class PaymentServiceImpl implements PaymentService {
         return stats;
     }
 
-    // ========================================================================
     // Private Helper Methods
-    // ========================================================================
 
     /**
      * 카카오페이 API 요청 헤더 생성

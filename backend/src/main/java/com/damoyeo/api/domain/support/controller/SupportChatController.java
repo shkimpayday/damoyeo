@@ -24,15 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ============================================================================
  * 상담 채팅 API Controller
- * ============================================================================
  *
- * [역할]
  * - REST API: 상담 생성, 조회, 메시지 히스토리
  * - WebSocket: 실시간 상담 메시지 송수신
  *
- * [엔드포인트 목록]
  *
  * === 사용자 REST API ===
  * POST   /api/support                          - 상담 생성
@@ -70,8 +66,6 @@ import java.util.Map;
  * });
  * ```
  *
- * @author damoyeo
- * @since 2025-03-16
  */
 @RestController
 @RequestMapping("/api/support")
@@ -83,9 +77,7 @@ public class SupportChatController {
     private final SupportChatService supportChatService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    // ========================================================================
     // 사용자 REST API
-    // ========================================================================
 
     /**
      * 새 상담 생성
@@ -232,9 +224,7 @@ public class SupportChatController {
         return ResponseEntity.ok().build();
     }
 
-    // ========================================================================
     // 관리자 REST API
-    // ========================================================================
 
     /**
      * 대기 중인 상담 목록 (관리자용)
@@ -381,9 +371,7 @@ public class SupportChatController {
         return ResponseEntity.ok(count);
     }
 
-    // ========================================================================
     // WebSocket - 실시간 메시지 송수신
-    // ========================================================================
 
     /**
      * WebSocket: 사용자 메시지 전송

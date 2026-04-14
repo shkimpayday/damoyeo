@@ -9,11 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /**
- * ============================================================================
  * 알림(Notification) 레포지토리
- * ============================================================================
  *
- * [역할]
  * 알림 엔티티에 대한 데이터베이스 접근을 담당합니다.
  * Spring Data JPA의 JpaRepository를 상속받아 기본 CRUD 메서드를 사용합니다.
  *
@@ -30,7 +27,6 @@ import org.springframework.data.repository.query.Param;
  * - delete(entity): 삭제
  * - count(): 총 개수
  *
- * [사용 위치]
  * - NotificationServiceImpl에서 주입받아 사용
  *
  * [쿼리 메서드 명명 규칙]
@@ -65,7 +61,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      *   - totalElements: 전체 개수
      *   - totalPages: 전체 페이지 수
      *
-     * [사용 위치]
      * NotificationServiceImpl.getNotifications()
      *
      * [프론트엔드 API]
@@ -92,7 +87,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * [반환값]
      * int: 읽지 않은 알림 개수
      *
-     * [사용 위치]
      * NotificationServiceImpl.getUnreadCount()
      *
      * [프론트엔드 API]
@@ -130,7 +124,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * SET is_read = true
      * WHERE member_id = ?
      *
-     * [사용 위치]
      * NotificationServiceImpl.markAllAsRead()
      *
      * [프론트엔드 API]

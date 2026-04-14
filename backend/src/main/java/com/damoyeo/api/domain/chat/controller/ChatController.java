@@ -25,44 +25,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ============================================================================
- * 채팅 API Controller
- * ============================================================================
+ * 채팅 컨트롤러.
+ * REST API(히스토리 조회, 읽음 처리, 채팅방 목록)와
+ * WebSocket(@MessageMapping)을 통한 실시간 메시지 송수신을 담당한다.
  *
- * [역할]
- * - REST API: 채팅 히스토리 조회, 읽음 처리, 채팅방 목록
- * - WebSocket: 실시간 메시지 송수신 (@MessageMapping)
- *
- * [엔드포인트 목록]
- *
- * === REST API ===
- * GET    /api/chat/{groupId}/messages        - 메시지 히스토리 (페이지네이션)
- * GET    /api/chat/{groupId}/unread-count    - 읽지 않은 메시지 개수
- * POST   /api/chat/{groupId}/read            - 읽음 처리
- * GET    /api/chat/my-chats                  - 내 채팅방 목록
- *
- * === WebSocket ===
- * SEND      /app/chat/{groupId}        - 메시지 전송 (클라이언트 → 서버)
- * SUBSCRIBE /topic/chat/{groupId}      - 메시지 수신 (서버 → 클라이언트)
- * SUBSCRIBE /user/queue/errors         - 에러 메시지 수신 (개인)
- *
- * [프론트엔드 사용 예시]
- * ```typescript
- * // 1. 채팅방 구독
- * client.subscribe('/topic/chat/1', (message) => {
- *   const chatMessage = JSON.parse(message.body);
- *   console.log('새 메시지:', chatMessage);
- * });
- *
- * // 2. 메시지 전송
- * client.publish({
- *   destination: '/app/chat/1',
- *   body: JSON.stringify({ message: '안녕하세요' })
- * });
- * ```
- *
- * @author damoyeo
- * @since 2025-02-25
+ * WebSocket 엔드포인트:
+ * - SEND      /app/chat/{groupId}       메시지 전송
+ * - SUBSCRIBE /topic/chat/{groupId}     메시지 수신
+ * - SUBSCRIBE /user/queue/errors        에러 수신 (개인)
  */
 @RestController
 @RequestMapping("/api/chat")
@@ -74,30 +44,8 @@ public class ChatController {
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    // ========================================================================
-    // REST API - 메시지 히스토리
-    // ========================================================================
 
-    /**
-     * 메시지 히스토리 조회 (페이지네이션)
-     *
-     * [용도]
-     * 채팅방 진입 시 최근 메시지를 로드합니다.
-     * 무한 스크롤로 과거 메시지를 추가 로드할 수 있습니다.
-     *
-     * [프론트엔드 요청]
-     * GET /api/chat/1/messages?page=1&size=50
-     * Authorization: Bearer {accessToken}
-     *
-     * [응답]
-     * {
-     *   "dtoList": [...],
-     *   "totalCount": 123,
-     *   "page": 1,
-     *   "size": 50,
-     *   ...
-     * }
-     */
+    /** GET /api/chat/{groupId}/messages - 메시지 히스토리 조회 (페이지네이션) */
     @GetMapping("/{groupId}/messages")
     @Operation(summary = "메시지 히스토리 조회", description = "모임의 채팅 메시지를 페이지네이션으로 조회합니다.")
     public ResponseEntity<PageResponseDTO<ChatMessageDTO>> getMessages(
@@ -122,19 +70,7 @@ public class ChatController {
         return ResponseEntity.ok(messages);
     }
 
-    /**
-     * 읽지 않은 메시지 개수 조회
-     *
-     * [용도]
-     * 채팅방 목록에서 읽지 않은 메시지 배지를 표시합니다.
-     *
-     * [프론트엔드 요청]
-     * GET /api/chat/1/unread-count
-     * Authorization: Bearer {accessToken}
-     *
-     * [응답]
-     * 5
-     */
+    /** GET /api/chat/{groupId}/unread-count - 읽지 않은 메시지 개수 */
     @GetMapping("/{groupId}/unread-count")
     @Operation(summary = "읽지 않은 메시지 개수", description = "특정 모임의 읽지 않은 메시지 개수를 조회합니다.")
     public ResponseEntity<Integer> getUnreadCount(
@@ -148,23 +84,7 @@ public class ChatController {
         return ResponseEntity.ok(count);
     }
 
-    /**
-     * 메시지 읽음 처리
-     *
-     * [용도]
-     * 채팅방에서 메시지를 읽었을 때 호출합니다.
-     * 마지막으로 읽은 메시지 ID를 업데이트하여 unread count를 감소시킵니다.
-     *
-     * [프론트엔드 요청]
-     * POST /api/chat/1/read
-     * Authorization: Bearer {accessToken}
-     * {
-     *   "lastReadMessageId": 123
-     * }
-     *
-     * [응답]
-     * 200 OK
-     */
+    /** POST /api/chat/{groupId}/read - 메시지 읽음 처리 */
     @PostMapping("/{groupId}/read")
     @Operation(summary = "메시지 읽음 처리", description = "마지막으로 읽은 메시지 ID를 업데이트합니다.")
     public ResponseEntity<Void> markAsRead(
@@ -181,28 +101,7 @@ public class ChatController {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * 내 채팅방 목록 조회
-     *
-     * [용도]
-     * 사용자가 속한 모든 모임의 채팅방 목록을 조회합니다.
-     * 각 채팅방의 최신 메시지와 읽지 않은 메시지 개수를 포함합니다.
-     *
-     * [프론트엔드 요청]
-     * GET /api/chat/my-chats
-     * Authorization: Bearer {accessToken}
-     *
-     * [응답]
-     * [
-     *   {
-     *     "groupId": 1,
-     *     "groupName": "강남 러닝 크루",
-     *     "latestMessage": {...},
-     *     "unreadCount": 5
-     *   },
-     *   ...
-     * ]
-     */
+    /** GET /api/chat/my-chats - 내 채팅방 목록 (최신 메시지 + 읽지 않은 수 포함) */
     @GetMapping("/my-chats")
     @Operation(summary = "내 채팅방 목록", description = "내가 속한 모든 모임의 채팅방 목록을 조회합니다.")
     public ResponseEntity<List<ChatRoomDTO>> getMyChatRooms(@AuthenticationPrincipal MemberDTO member) {
@@ -214,41 +113,9 @@ public class ChatController {
         return ResponseEntity.ok(chatRooms);
     }
 
-    // ========================================================================
-    // WebSocket - 실시간 메시지 송수신
-    // ========================================================================
-
     /**
-     * WebSocket: 메시지 전송
-     *
-     * [@MessageMapping]
-     * WebSocket으로 들어오는 메시지를 처리합니다.
-     * 클라이언트가 /app/chat/{groupId}로 SEND하면 이 메서드가 호출됩니다.
-     *
-     * [처리 흐름]
-     * 1. 클라이언트: SEND → /app/chat/1
-     * 2. 서버: 메시지 검증 및 저장 (ChatService.sendMessage)
-     * 3. 서버: 브로드캐스트 → /topic/chat/1 (모든 구독자에게 전송)
-     * 4. 에러 발생 시: 발신자에게만 에러 메시지 전송 → /user/queue/errors
-     *
-     * [클라이언트 사용 예시]
-     * ```typescript
-     * client.publish({
-     *   destination: '/app/chat/1',
-     *   body: JSON.stringify({ message: '안녕하세요' })
-     * });
-     * ```
-     *
-     * [@DestinationVariable]
-     * URL 경로의 변수를 파라미터로 추출합니다.
-     * /app/chat/{groupId} → Long groupId
-     *
-     * [@Payload]
-     * WebSocket 메시지 body를 DTO로 변환합니다.
-     *
-     * [Principal]
-     * JWTChannelInterceptor에서 설정한 사용자 정보
-     * principal.getName() → 사용자 이메일
+     * WebSocket: SEND /app/chat/{groupId} → 검증·저장 후 /topic/chat/{groupId}로 브로드캐스트.
+     * 에러 시 발신자의 /user/queue/errors로 전송.
      */
     @MessageMapping("/chat/{groupId}")
     public void sendMessage(
@@ -259,7 +126,6 @@ public class ChatController {
         log.info("[WebSocket] 메시지 전송 - groupId: {}, email: {}", groupId, principal.getName());
 
         try {
-            // 1. 메시지 저장 및 검증
             ChatMessageDTO message = chatService.sendMessage(
                     groupId,
                     principal.getName(),
@@ -268,7 +134,6 @@ public class ChatController {
 
             log.info("[WebSocket] 메시지 저장 완료 - id: {}", message.getId());
 
-            // 2. 구독자들에게 브로드캐스트
             // /topic/chat/{groupId}를 구독한 모든 클라이언트에게 전송
             messagingTemplate.convertAndSend(
                     "/topic/chat/" + groupId,
@@ -280,7 +145,6 @@ public class ChatController {
         } catch (Exception e) {
             log.error("[WebSocket] 메시지 전송 실패: {}", e.getMessage(), e);
 
-            // 3. 에러 발생 시 발신자에게만 에러 메시지 전송
             // /user/queue/errors를 구독한 발신자에게만 전송
             messagingTemplate.convertAndSendToUser(
                     principal.getName(),
@@ -291,29 +155,8 @@ public class ChatController {
     }
 
     /**
-     * WebSocket: 타이핑 인디케이터
-     *
-     * [역할]
-     * 사용자가 메시지를 입력 중일 때 다른 사용자들에게 알립니다.
-     * "○○○님이 입력 중..." UI를 표시하기 위한 이벤트입니다.
-     *
-     * [처리 흐름]
-     * 1. 클라이언트: SEND → /app/chat/{groupId}/typing
-     * 2. 서버: 브로드캐스트 → /topic/chat/{groupId}/typing
-     * 3. 다른 클라이언트: 타이핑 인디케이터 표시 (3초간)
-     *
-     * [클라이언트 사용 예시]
-     * ```typescript
-     * client.publish({
-     *   destination: '/app/chat/1/typing',
-     *   body: JSON.stringify({ typing: true })
-     * });
-     * ```
-     *
-     * [주의사항]
-     * - DB에 저장하지 않음 (일시적 상태)
-     * - 디바운싱으로 과도한 이벤트 방지 (프론트엔드 처리)
-     * - 본인에게도 브로드캐스트됨 (프론트엔드에서 필터링)
+     * WebSocket: SEND /app/chat/{groupId}/typing → /topic/chat/{groupId}/typing 브로드캐스트.
+     * DB 저장 없이 임시 이벤트로만 처리. 프론트엔드에서 3초 타이머로 제거.
      */
     @MessageMapping("/chat/{groupId}/typing")
     public void handleTyping(
@@ -341,20 +184,8 @@ public class ChatController {
         }
     }
 
-    // ========================================================================
-    // REST API - 정모 채팅 (참석자 전용)
-    // ========================================================================
 
-    /**
-     * 정모 메시지 히스토리 조회 (페이지네이션)
-     *
-     * [권한]
-     * ATTENDING 상태의 참석자만 조회 가능합니다.
-     *
-     * [프론트엔드 요청]
-     * GET /api/chat/meeting/1/messages?page=1&size=50
-     * Authorization: Bearer {accessToken}
-     */
+    /** GET /api/chat/meeting/{meetingId}/messages - 정모 메시지 히스토리 (참석자 전용) */
     @GetMapping("/meeting/{meetingId}/messages")
     @Operation(summary = "정모 메시지 히스토리 조회", description = "정모의 채팅 메시지를 페이지네이션으로 조회합니다. (참석자 전용)")
     public ResponseEntity<PageResponseDTO<ChatMessageDTO>> getMeetingMessages(
@@ -379,12 +210,7 @@ public class ChatController {
         return ResponseEntity.ok(messages);
     }
 
-    /**
-     * 정모 읽지 않은 메시지 개수 조회
-     *
-     * [권한]
-     * ATTENDING 상태의 참석자만 조회 가능합니다.
-     */
+    /** GET /api/chat/meeting/{meetingId}/unread-count - 정모 읽지 않은 메시지 개수 (참석자 전용) */
     @GetMapping("/meeting/{meetingId}/unread-count")
     @Operation(summary = "정모 읽지 않은 메시지 개수", description = "특정 정모의 읽지 않은 메시지 개수를 조회합니다. (참석자 전용)")
     public ResponseEntity<Integer> getMeetingUnreadCount(
@@ -398,12 +224,7 @@ public class ChatController {
         return ResponseEntity.ok(count);
     }
 
-    /**
-     * 정모 메시지 읽음 처리
-     *
-     * [권한]
-     * ATTENDING 상태의 참석자만 가능합니다.
-     */
+    /** POST /api/chat/meeting/{meetingId}/read - 정모 메시지 읽음 처리 (참석자 전용) */
     @PostMapping("/meeting/{meetingId}/read")
     @Operation(summary = "정모 메시지 읽음 처리", description = "마지막으로 읽은 메시지 ID를 업데이트합니다. (참석자 전용)")
     public ResponseEntity<Void> markMeetingAsRead(
@@ -420,22 +241,7 @@ public class ChatController {
         return ResponseEntity.ok().build();
     }
 
-    // ========================================================================
-    // WebSocket - 정모 실시간 메시지 송수신
-    // ========================================================================
-
-    /**
-     * WebSocket: 정모 메시지 전송
-     *
-     * [처리 흐름]
-     * 1. 클라이언트: SEND → /app/meeting-chat/1
-     * 2. 서버: 참석자 검증 및 메시지 저장
-     * 3. 서버: 브로드캐스트 → /topic/meeting-chat/1
-     * 4. 에러 발생 시: 발신자에게만 에러 메시지 전송
-     *
-     * [권한]
-     * ATTENDING 상태의 참석자만 메시지 전송 가능합니다.
-     */
+    /** WebSocket: SEND /app/meeting-chat/{meetingId} → /topic/meeting-chat/{meetingId} 브로드캐스트. 참석자 전용. */
     @MessageMapping("/meeting-chat/{meetingId}")
     public void sendMeetingMessage(
             @DestinationVariable Long meetingId,
@@ -445,7 +251,6 @@ public class ChatController {
         log.info("[WebSocket] 정모 메시지 전송 - meetingId: {}, email: {}", meetingId, principal.getName());
 
         try {
-            // 1. 메시지 저장 및 검증
             ChatMessageDTO message = chatService.sendMeetingMessage(
                     meetingId,
                     principal.getName(),
@@ -454,7 +259,6 @@ public class ChatController {
 
             log.info("[WebSocket] 정모 메시지 저장 완료 - id: {}", message.getId());
 
-            // 2. 구독자들에게 브로드캐스트
             messagingTemplate.convertAndSend(
                     "/topic/meeting-chat/" + meetingId,
                     message
@@ -474,13 +278,7 @@ public class ChatController {
         }
     }
 
-    /**
-     * WebSocket: 정모 타이핑 인디케이터
-     *
-     * [처리 흐름]
-     * 1. 클라이언트: SEND → /app/meeting-chat/{meetingId}/typing
-     * 2. 서버: 브로드캐스트 → /topic/meeting-chat/{meetingId}/typing
-     */
+    /** WebSocket: SEND /app/meeting-chat/{meetingId}/typing → /topic/meeting-chat/{meetingId}/typing 브로드캐스트. */
     @MessageMapping("/meeting-chat/{meetingId}/typing")
     public void handleMeetingTyping(
             @DestinationVariable Long meetingId,

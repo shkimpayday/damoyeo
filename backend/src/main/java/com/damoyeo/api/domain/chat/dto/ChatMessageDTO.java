@@ -10,11 +10,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * ============================================================================
  * 채팅 메시지 응답 DTO
- * ============================================================================
  *
- * [역할]
  * 채팅 메시지 정보를 프론트엔드에 전달하기 위한 데이터 전송 객체입니다.
  *
  * [Entity → DTO 변환 이유]
@@ -22,7 +19,6 @@ import java.time.LocalDateTime;
  * 2. 필요한 정보만 선택적으로 노출 (group 전체 정보 대신 groupId만)
  * 3. 발신자 정보를 중첩 객체(MemberSummaryDTO)로 반환 (RESTful)
  *
- * [사용 위치]
  * - ChatController: REST API 응답 (메시지 히스토리)
  * - ChatController.sendMessage: WebSocket 브로드캐스트
  * - ChatServiceImpl: Entity를 DTO로 변환
@@ -48,8 +44,6 @@ import java.time.LocalDateTime;
  *   "createdAt": "2025-02-25T10:31:00"
  * }
  *
- * @author damoyeo
- * @since 2025-02-25
  */
 @Data
 @Builder
@@ -57,9 +51,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ChatMessageDTO {
 
-    // ========================================================================
     // 기본 정보
-    // ========================================================================
 
     /**
      * 메시지 ID (PK)
@@ -86,9 +78,7 @@ public class ChatMessageDTO {
      */
     private Long meetingId;
 
-    // ========================================================================
     // 발신자 정보 (중첩 객체)
-    // ========================================================================
 
     /**
      * 발신자 정보
@@ -102,9 +92,7 @@ public class ChatMessageDTO {
      */
     private MemberSummaryDTO sender;
 
-    // ========================================================================
     // 메시지 내용
-    // ========================================================================
 
     /**
      * 메시지 텍스트
@@ -131,9 +119,7 @@ public class ChatMessageDTO {
      */
     private String imageUrl;
 
-    // ========================================================================
     // 시간 정보
-    // ========================================================================
 
     /**
      * 메시지 전송 시각

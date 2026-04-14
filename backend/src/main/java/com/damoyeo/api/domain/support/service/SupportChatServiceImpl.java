@@ -28,9 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * ============================================================================
  * 상담 채팅 서비스 구현체
- * ============================================================================
  *
  * <p>상담 채팅 관련 비즈니스 로직을 구현합니다.</p>
  *
@@ -40,8 +38,6 @@ import java.util.stream.Collectors;
  *   <li>수정: @Transactional</li>
  * </ul>
  *
- * @author damoyeo
- * @since 2025-03-16
  */
 @Service
 @Log4j2
@@ -53,9 +49,7 @@ public class SupportChatServiceImpl implements SupportChatService {
     private final SupportMessageRepository supportMessageRepository;
     private final MemberRepository memberRepository;
 
-    // ========================================================================
     // 사용자 기능
-    // ========================================================================
 
     /**
      * {@inheritDoc}
@@ -73,17 +67,14 @@ public class SupportChatServiceImpl implements SupportChatService {
     public SupportChatDTO createSupportChat(String email, CreateSupportChatRequest request) {
         log.info("상담 생성 요청: email={}, title={}", email, request.getTitle());
 
-        // 1. 사용자 조회
         Member user = getMemberByEmail(email);
 
-        // 2. 진행 중인 상담 확인
         supportChatRepository.findActiveByUserId(user.getId(),
                         Arrays.asList(SupportChatStatus.WAITING, SupportChatStatus.IN_PROGRESS))
                 .ifPresent(chat -> {
                     throw new IllegalStateException("이미 진행 중인 상담이 있습니다.");
                 });
 
-        // 3. 상담 엔티티 생성
         SupportChat supportChat = SupportChat.builder()
                 .user(user)
                 .title(request.getTitle())
@@ -91,7 +82,6 @@ public class SupportChatServiceImpl implements SupportChatService {
                 .build();
         supportChatRepository.save(supportChat);
 
-        // 4. 첫 메시지 저장
         SupportMessage firstMessage = SupportMessage.builder()
                 .supportChat(supportChat)
                 .sender(user)
@@ -102,7 +92,6 @@ public class SupportChatServiceImpl implements SupportChatService {
 
         log.info("상담 생성 완료: chatId={}", supportChat.getId());
 
-        // 5. DTO 반환
         return entityToDTO(supportChat, firstMessage);
     }
 
@@ -213,9 +202,7 @@ public class SupportChatServiceImpl implements SupportChatService {
         log.info("상담 평가 완료: chatId={}, rating={}", supportChatId, rating);
     }
 
-    // ========================================================================
     // 관리자 기능
-    // ========================================================================
 
     /**
      * {@inheritDoc}
@@ -418,9 +405,7 @@ public class SupportChatServiceImpl implements SupportChatService {
         return supportChatRepository.countByStatus(SupportChatStatus.WAITING);
     }
 
-    // ========================================================================
     // 공통 기능
-    // ========================================================================
 
     /**
      * {@inheritDoc}
@@ -472,9 +457,7 @@ public class SupportChatServiceImpl implements SupportChatService {
         }
     }
 
-    // ========================================================================
     // 헬퍼 메서드
-    // ========================================================================
 
     /**
      * 이메일로 회원 조회

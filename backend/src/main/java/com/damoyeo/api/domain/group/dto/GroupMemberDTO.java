@@ -9,11 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * ============================================================================
  * 모임 멤버 응답 DTO
- * ============================================================================
  *
- * [역할]
  * 모임 멤버 정보를 프론트엔드에 전달하기 위한 데이터 전송 객체입니다.
  *
  * [GroupMember → GroupMemberDTO 변환 이유]
@@ -21,7 +18,6 @@ import java.time.LocalDateTime;
  * 프론트엔드에서 멤버 목록을 표시할 때는 member 정보만 필요합니다.
  * 회원 정보는 중첩 객체로 반환합니다.
  *
- * [사용 위치]
  * - GroupController.getMembers() - 멤버 목록 조회 응답
  *
  * [프론트엔드 응답 예시]

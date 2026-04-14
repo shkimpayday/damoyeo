@@ -11,21 +11,16 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * ============================================================================
  * 정모(Meeting) 레포지토리
- * ============================================================================
  *
- * [역할]
  * Meeting 엔티티의 데이터베이스 접근을 담당합니다.
  *
- * [주요 기능]
  * - 정모 상세 조회 (fetch join으로 연관 엔티티 로딩)
  * - 모임별 정모 목록 조회
  * - 다가오는 정모 조회
  * - 내가 참석하는 정모 조회
  * - 참석자 수 카운트
  *
- * [사용 위치]
  * - MeetingServiceImpl에서 주입받아 사용
  *
  * [N+1 문제 방지]
@@ -153,9 +148,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
             "where ma.meeting.id = :meetingId and ma.status = 'ATTENDING'")
     int countAttendees(@Param("meetingId") Long meetingId);
 
-    // ========================================================================
     // 날짜 기반 목록 조회 (예정/지난 정모 분리)
-    // ========================================================================
 
     /**
      * 특정 모임의 예정된 정모 목록 조회 (날짜 기반)
@@ -205,9 +198,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     List<Meeting> findPastByGroupId(@Param("groupId") Long groupId,
                                     @Param("now") LocalDateTime now);
 
-    // ========================================================================
     // 리마인더 스케줄러용 쿼리
-    // ========================================================================
 
     /**
      * 1일 전 리마인더 대상 정모 조회
@@ -216,7 +207,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
      * - 정모 시작 시간이 startTime ~ endTime 사이인 정모
      * - 취소된 정모(CANCELLED) 제외
      *
-     * [사용 예시]
      * 매일 오전 9시에 실행하여, 내일 진행되는 정모를 조회합니다.
      * startTime = 내일 00:00, endTime = 내일 23:59:59
      *
@@ -239,7 +229,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
      * - 정모 시작 시간이 startTime ~ endTime 사이인 정모
      * - 취소된 정모(CANCELLED) 제외
      *
-     * [사용 예시]
      * 매 시간 정각에 실행하여, 3시간 후 시작하는 정모를 조회합니다.
      * startTime = now + 3시간, endTime = now + 4시간
      *
@@ -255,9 +244,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     List<Meeting> findMeetingsForImminentReminder(@Param("startTime") LocalDateTime startTime,
                                                   @Param("endTime") LocalDateTime endTime);
 
-    // ========================================================================
     // 관리자용 쿼리
-    // ========================================================================
 
     /**
      * 예정된 정모 수 집계

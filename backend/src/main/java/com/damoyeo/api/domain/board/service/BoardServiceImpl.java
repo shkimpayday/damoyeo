@@ -33,19 +33,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * ============================================================================
- * 모임 게시판 서비스 구현체
- * ============================================================================
- *
- * <p>모임 게시판 관련 비즈니스 로직을 구현합니다.</p>
- *
- * <p>권한 정책:</p>
- * <ul>
- *   <li>게시글 작성: 모임 멤버 (NOTICE는 OWNER/MANAGER만)</li>
- *   <li>게시글 조회: 모임 멤버</li>
- *   <li>게시글 삭제: 작성자 본인 또는 OWNER/MANAGER</li>
- *   <li>댓글 작성/삭제: 동일 정책</li>
- * </ul>
+ * 모임 게시판 서비스 구현체.
+ * 게시글/댓글 작성·조회·삭제 및 좋아요 토글을 처리한다.
+ * 공지사항(NOTICE) 작성은 OWNER/MANAGER로 제한되며, 삭제는 작성자 본인 또는 관리자만 가능하다.
  */
 @Service
 @RequiredArgsConstructor
@@ -64,9 +54,6 @@ public class BoardServiceImpl implements BoardService {
     /** 한 게시글에 첨부 가능한 최대 이미지 수 */
     private static final int MAX_IMAGE_COUNT = 5;
 
-    // ========================================================================
-    // 게시글 관련 메서드
-    // ========================================================================
 
     /**
      * {@inheritDoc}
@@ -75,19 +62,15 @@ public class BoardServiceImpl implements BoardService {
     @Transactional
     public BoardPostDTO createPost(Long groupId, BoardCategory category, String title,
                                    String content, List<MultipartFile> files, String email) {
-        // 1. 모임 조회
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new CustomException("모임을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 작성자 조회
         Member author = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         GroupMember membership = groupMemberRepository.findByGroupIdAndMemberId(groupId, author.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 게시글을 작성할 수 있습니다.", HttpStatus.FORBIDDEN));
 
-        // 4. 공지사항은 운영진만 작성 가능
         if (category == BoardCategory.NOTICE) {
             boolean isStaff = membership.getRole() == GroupRole.OWNER
                     || membership.getRole() == GroupRole.MANAGER;
@@ -96,7 +79,6 @@ public class BoardServiceImpl implements BoardService {
             }
         }
 
-        // 5. 이미지 개수 확인
         if (files != null && files.size() > MAX_IMAGE_COUNT) {
             throw new CustomException(
                     "이미지는 최대 " + MAX_IMAGE_COUNT + "개까지 첨부할 수 있습니다.",
@@ -104,7 +86,6 @@ public class BoardServiceImpl implements BoardService {
             );
         }
 
-        // 6. 게시글 생성
         BoardPost post = BoardPost.builder()
                 .group(group)
                 .author(author)
@@ -114,7 +95,6 @@ public class BoardServiceImpl implements BoardService {
                 .isPinned(category == BoardCategory.NOTICE) // 공지사항은 자동 고정
                 .build();
 
-        // 7. 이미지 업로드 및 연결
         if (files != null) {
             for (MultipartFile file : files) {
                 if (file == null || file.isEmpty()) continue;
@@ -131,7 +111,6 @@ public class BoardServiceImpl implements BoardService {
             }
         }
 
-        // 8. 저장
         BoardPost saved = boardPostRepository.save(post);
 
         log.info("Board post created - groupId: {}, postId: {}, category: {}, author: {}",
@@ -146,30 +125,24 @@ public class BoardServiceImpl implements BoardService {
     @Override
     public PageResponseDTO<BoardPostDTO> getPosts(Long groupId, int page, int size,
                                                    BoardCategory category, String email) {
-        // 1. 모임 존재 확인
         if (!groupRepository.existsById(groupId)) {
             throw new CustomException("모임을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
         }
 
-        // 2. 조회자 정보
         Member viewer = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         GroupMember membership = groupMemberRepository.findByGroupIdAndMemberId(groupId, viewer.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 게시판을 볼 수 있습니다.", HttpStatus.FORBIDDEN));
 
-        // 4. PageRequestDTO 생성 (프론트는 0-based → 1-based 변환)
         PageRequestDTO pageRequestDTO = PageRequestDTO.builder()
                 .page(page + 1)
                 .size(size)
                 .build();
 
-        // 5. 페이지네이션 조회
         Pageable pageable = PageRequest.of(page, size);
         Page<BoardPost> postPage = boardPostRepository.findByGroupIdAndCategory(groupId, category, pageable);
 
-        // 6. DTO 변환
         boolean isManager = membership.getRole() == GroupRole.OWNER
                 || membership.getRole() == GroupRole.MANAGER;
 
@@ -192,15 +165,12 @@ public class BoardServiceImpl implements BoardService {
      */
     @Override
     public BoardPostDTO getPost(Long groupId, Long postId, String email) {
-        // 1. 게시글 조회
         BoardPost post = boardPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 조회자 정보
         Member viewer = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         GroupMember membership = groupMemberRepository.findByGroupIdAndMemberId(groupId, viewer.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 게시글을 볼 수 있습니다.", HttpStatus.FORBIDDEN));
 
@@ -217,15 +187,12 @@ public class BoardServiceImpl implements BoardService {
     @Override
     @Transactional
     public void deletePost(Long postId, String email) {
-        // 1. 게시글 조회
         BoardPost post = boardPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 요청자 조회
         Member requester = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 권한 확인 (작성자 본인 또는 관리자)
         boolean isAuthor = post.getAuthor().getId().equals(requester.getId());
         boolean isManager = false;
 
@@ -243,24 +210,18 @@ public class BoardServiceImpl implements BoardService {
             throw new CustomException("게시글을 삭제할 권한이 없습니다.", HttpStatus.FORBIDDEN);
         }
 
-        // 4. 관련 좋아요 / 댓글 삭제
         boardLikeRepository.deleteAllByPostId(postId);
         boardCommentRepository.deleteAllByPostId(postId);
 
-        // 5. 이미지 파일 삭제
         for (BoardImage image : post.getImages()) {
             fileUploadUtil.deleteFile(image.getImageUrl());
         }
 
-        // 6. DB 삭제 (cascade로 BoardImage도 삭제됨)
         boardPostRepository.delete(post);
 
         log.info("Board post deleted - postId: {}, deletedBy: {}", postId, email);
     }
 
-    // ========================================================================
-    // 좋아요 관련 메서드
-    // ========================================================================
 
     /**
      * {@inheritDoc}
@@ -268,19 +229,15 @@ public class BoardServiceImpl implements BoardService {
     @Override
     @Transactional
     public boolean toggleLike(Long postId, String email) {
-        // 1. 게시글 조회
         BoardPost post = boardPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 사용자 조회
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         groupMemberRepository.findByGroupIdAndMemberId(post.getGroup().getId(), member.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 좋아요를 누를 수 있습니다.", HttpStatus.FORBIDDEN));
 
-        // 4. 좋아요 토글
         Optional<BoardLike> existingLike = boardLikeRepository.findByPostIdAndMemberId(postId, member.getId());
 
         if (existingLike.isPresent()) {
@@ -303,31 +260,24 @@ public class BoardServiceImpl implements BoardService {
         return boardLikeRepository.countByPostId(postId);
     }
 
-    // ========================================================================
-    // 댓글 관련 메서드
-    // ========================================================================
 
     /**
      * {@inheritDoc}
      */
     @Override
     public List<BoardCommentDTO> getComments(Long postId, String email) {
-        // 1. 게시글 조회
         BoardPost post = boardPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 조회자 정보
         Member viewer = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         GroupMember membership = groupMemberRepository.findByGroupIdAndMemberId(post.getGroup().getId(), viewer.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 댓글을 볼 수 있습니다.", HttpStatus.FORBIDDEN));
 
         boolean isManager = membership.getRole() == GroupRole.OWNER
                 || membership.getRole() == GroupRole.MANAGER;
 
-        // 4. 댓글 목록 조회
         List<BoardComment> comments = boardCommentRepository.findByPostIdWithAuthor(postId);
 
         return comments.stream()
@@ -344,19 +294,15 @@ public class BoardServiceImpl implements BoardService {
     @Override
     @Transactional
     public BoardCommentDTO addComment(Long postId, String content, String email) {
-        // 1. 게시글 조회
         BoardPost post = boardPostRepository.findByIdWithDetails(postId)
                 .orElseThrow(() -> new CustomException("게시글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 작성자 조회
         Member author = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 모임 멤버 권한 확인
         groupMemberRepository.findByGroupIdAndMemberId(post.getGroup().getId(), author.getId())
                 .orElseThrow(() -> new CustomException("모임 멤버만 댓글을 작성할 수 있습니다.", HttpStatus.FORBIDDEN));
 
-        // 4. 내용 검증
         if (content == null || content.trim().isEmpty()) {
             throw new CustomException("댓글 내용을 입력해주세요.", HttpStatus.BAD_REQUEST);
         }
@@ -364,7 +310,6 @@ public class BoardServiceImpl implements BoardService {
             throw new CustomException("댓글은 500자 이하로 작성해주세요.", HttpStatus.BAD_REQUEST);
         }
 
-        // 5. 댓글 생성
         BoardComment comment = BoardComment.builder()
                 .post(post)
                 .author(author)
@@ -383,15 +328,12 @@ public class BoardServiceImpl implements BoardService {
     @Override
     @Transactional
     public void deleteComment(Long commentId, String email) {
-        // 1. 댓글 조회
         BoardComment comment = boardCommentRepository.findByIdWithDetails(commentId)
                 .orElseThrow(() -> new CustomException("댓글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 2. 요청자 조회
         Member requester = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException("회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND));
 
-        // 3. 권한 확인 (작성자 본인 또는 관리자)
         boolean isAuthor = comment.getAuthor().getId().equals(requester.getId());
         boolean isManager = false;
 
@@ -413,9 +355,6 @@ public class BoardServiceImpl implements BoardService {
         log.info("Board comment deleted - commentId: {}, deletedBy: {}", commentId, email);
     }
 
-    // ========================================================================
-    // DTO 변환 메서드
-    // ========================================================================
 
     /**
      * 게시글 엔티티 → DTO 변환

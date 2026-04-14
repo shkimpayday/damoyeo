@@ -9,11 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * ============================================================================
  * 알림(Notification) 응답 DTO
- * ============================================================================
  *
- * [역할]
  * 알림 정보를 클라이언트에게 전달하는 데이터 전송 객체입니다.
  * Notification 엔티티를 프론트엔드 응답용으로 변환합니다.
  *
@@ -23,7 +20,6 @@ import java.time.LocalDateTime;
  * 3. 내부 구조(Entity)와 API 응답 구조 분리
  * 4. Jackson 직렬화 시 LAZY 로딩 문제 방지
  *
- * [사용 위치]
  * - NotificationController의 응답 타입
  * - NotificationServiceImpl.entityToDTO()에서 변환
  *

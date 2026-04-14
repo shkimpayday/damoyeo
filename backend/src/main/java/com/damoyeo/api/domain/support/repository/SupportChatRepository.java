@@ -13,12 +13,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * ============================================================================
  * 상담 채팅 Repository
- * ============================================================================
  *
- * @author damoyeo
- * @since 2025-03-16
  */
 public interface SupportChatRepository extends JpaRepository<SupportChat, Long> {
 

@@ -111,7 +111,6 @@ export const kakaoLogin = async (code: string): Promise<MemberInfo> => {
   return res.data;
 };
 
-// ============ 이메일 인증 API ============
 
 const emailPrefix = `${ENV.API_URL}/api/email`;
 

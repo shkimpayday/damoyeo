@@ -18,14 +18,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ============================================================================
  * 모임 관리 API Controller
- * ============================================================================
  *
- * [역할]
  * 모임 CRUD, 검색, 멤버 관리 등 모든 모임 관련 API를 제공합니다.
  *
- * [엔드포인트 목록]
  *
  * === 모임 CRUD ===
  * POST   /api/groups           - 모임 생성 (인증 필요)
@@ -46,7 +42,6 @@ import java.util.Map;
  * DELETE /api/groups/{id}/members/{mid}             - 멤버 강퇴
  * PATCH  /api/groups/{id}/members/{mid}/role        - 역할 변경
  *
- * [어노테이션 설명]
  * @RestController: @Controller + @ResponseBody (JSON 응답)
  * @RequestMapping("/api/groups"): 기본 URL 경로
  * @Tag: Swagger API 문서 그룹핑
@@ -60,9 +55,7 @@ public class GroupController {
 
     private final GroupService groupService;
 
-    // ========================================================================
     // 모임 CRUD
-    // ========================================================================
 
     /**
      * 모임 생성
@@ -155,9 +148,7 @@ public class GroupController {
         return ResponseEntity.ok(Map.of("result", "SUCCESS"));
     }
 
-    // ========================================================================
     // 모임 목록/검색
-    // ========================================================================
 
     /**
      * 모임 목록 조회 (페이지네이션 + 검색 + 정렬)
@@ -250,9 +241,7 @@ public class GroupController {
         return ResponseEntity.ok(groupService.getRecommendedGroups());
     }
 
-    // ========================================================================
     // 멤버 관리
-    // ========================================================================
 
     /**
      * 모임 가입

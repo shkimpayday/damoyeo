@@ -95,7 +95,6 @@ export interface GalleryUploadRequest {
   caption?: string;
 }
 
-// ========== 좋아요 ==========
 
 /**
  * 좋아요 토글 응답
@@ -105,7 +104,6 @@ export interface LikeToggleResponse {
   likeCount: number;
 }
 
-// ========== 댓글 ==========
 
 /**
  * 댓글 작성자 정보
@@ -141,7 +139,6 @@ export interface CommentCreateRequest {
   content: string;
 }
 
-// ========== 하위 호환성을 위한 타입 (deprecated) ==========
 
 /**
  * @deprecated GalleryPostDTO를 사용하세요

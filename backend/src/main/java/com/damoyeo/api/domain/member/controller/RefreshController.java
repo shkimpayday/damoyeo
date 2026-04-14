@@ -16,11 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * ============================================================================
  * JWT 토큰 갱신 Controller
- * ============================================================================
  *
- * [역할]
  * Access Token이 만료되었을 때 Refresh Token으로 새 토큰을 발급합니다.
  *
  * [토큰 갱신 흐름]
@@ -73,19 +70,15 @@ public class RefreshController {
     public ResponseEntity<Map<String, Object>> refresh(
             @RequestHeader("Authorization") String authHeader) {
 
-        // 1. Authorization 헤더 확인
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new CustomException("Refresh token is required", HttpStatus.UNAUTHORIZED);
         }
 
-        // 2. "Bearer " 제거하고 토큰 추출
         String refreshToken = authHeader.substring(7);
 
         try {
-            // 3. Refresh Token 검증 (만료/위변조 확인)
             Map<String, Object> claims = jwtUtil.validateToken(refreshToken);
 
-            // 4. 새로운 토큰 쌍 발급
             // claims에는 email, nickname, roleNames 등이 포함되어 있음
             String newAccessToken = jwtUtil.generateAccessToken(claims);
             String newRefreshToken = jwtUtil.generateRefreshToken(claims);

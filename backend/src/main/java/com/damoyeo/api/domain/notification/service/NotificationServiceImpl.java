@@ -27,25 +27,19 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * ============================================================================
  * 알림 서비스 구현체
- * ============================================================================
  *
- * [역할]
  * NotificationService 인터페이스의 실제 구현을 담당합니다.
  * 알림 관련 비즈니스 로직을 처리합니다.
  *
- * [주요 기능]
  * - 알림 발송 (다른 서비스에서 호출)
  * - 알림 목록 조회 (페이지네이션)
  * - 읽지 않은 알림 개수 조회
  * - 읽음 처리 (개별/전체)
  *
- * [트랜잭션 정책]
  * - 클래스 레벨 @Transactional: 모든 메서드에 트랜잭션 적용
  * - 조회 메서드: @Transactional(readOnly = true)로 성능 최적화
  *
- * [사용 위치]
  * - NotificationController에서 주입받아 사용
  * - GroupServiceImpl, MeetingServiceImpl 등에서 알림 발송 시 사용
  *
@@ -61,9 +55,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
-    // ========================================================================
     // 의존성 주입 (DI)
-    // ========================================================================
 
     /** 알림 레포지토리 */
     private final NotificationRepository notificationRepository;
@@ -80,9 +72,7 @@ public class NotificationServiceImpl implements NotificationService {
     /** 날짜 포맷터 (리마인더 메시지용) */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    // ========================================================================
     // 알림 발송
-    // ========================================================================
 
     /**
      * 알림 발송
@@ -90,7 +80,6 @@ public class NotificationServiceImpl implements NotificationService {
      * 새로운 알림을 생성하고 DB에 저장합니다.
      * 다른 서비스(GroupService, MeetingService 등)에서 이벤트 발생 시 호출합니다.
      *
-     * [사용 예시]
      * // 새 멤버 가입 시 (GroupServiceImpl)
      * notificationService.send(
      *     owner,
@@ -121,9 +110,7 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("Notification sent to {}: {}", member.getEmail(), title);
     }
 
-    // ========================================================================
     // 알림 조회
-    // ========================================================================
 
     /**
      * 알림 목록 조회 (페이지네이션)
@@ -141,24 +128,19 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public PageResponseDTO<NotificationDTO> getNotifications(String email, PageRequestDTO pageRequestDTO) {
-        // 1. 회원 조회
         Member member = getMemberByEmail(email);
 
-        // 2. 정모 리마인더 동적 생성 (조회 시점에 필요한 리마인더 자동 생성)
         generateMeetingReminders(member);
 
-        // 3. 알림 목록 조회 (페이지네이션)
         Page<Notification> result = notificationRepository.findByMemberIdAndIsDeletedFalseOrderByCreatedAtDesc(
                 member.getId(),
                 pageRequestDTO.getPageable("createdAt")  // createdAt으로 정렬
         );
 
-        // 4. 엔티티 → DTO 변환
         List<NotificationDTO> dtoList = result.getContent().stream()
                 .map(this::entityToDTO)
                 .collect(Collectors.toList());
 
-        // 5. PageResponseDTO 빌드
         return PageResponseDTO.<NotificationDTO>builder()
                 .pageRequestDTO(pageRequestDTO)
                 .dtoList(dtoList)
@@ -185,9 +167,7 @@ public class NotificationServiceImpl implements NotificationService {
         return notificationRepository.countUnread(member.getId());
     }
 
-    // ========================================================================
     // 읽음 처리
-    // ========================================================================
 
     /**
      * 개별 알림 읽음 처리
@@ -203,19 +183,15 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public void markAsRead(Long notificationId, String email) {
-        // 1. 회원 조회
         Member member = getMemberByEmail(email);
 
-        // 2. 알림 조회
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> CustomException.notFound("알림을 찾을 수 없습니다."));
 
-        // 3. 권한 확인: 본인의 알림인지 확인
         if (!notification.getMember().getId().equals(member.getId())) {
             throw CustomException.forbidden("권한이 없습니다.");
         }
 
-        // 4. 읽음 처리
         //    JPA 더티 체킹으로 자동 저장
         notification.markAsRead();
     }
@@ -250,9 +226,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     }
 
-    // ========================================================================
     // Helper 메서드 (private)
-    // ========================================================================
 
     /**
      * 이메일로 회원 조회
@@ -304,9 +278,7 @@ public class NotificationServiceImpl implements NotificationService {
         };
     }
 
-    // ========================================================================
     // 정모 리마인더 동적 생성 (조회 시점 생성 방식)
-    // ========================================================================
 
     /**
      * 정모 리마인더 알림 동적 생성
@@ -334,12 +306,10 @@ public class NotificationServiceImpl implements NotificationService {
         for (Meeting meeting : myUpcomingMeetings) {
             LocalDateTime meetingDate = meeting.getMeetingDate();
 
-            // 1. D-1 리마인더: 정모가 내일인 경우 (24시간 이내)
             if (isWithinHours(meetingDate, now, 24) && !isWithinHours(meetingDate, now, 3)) {
                 createReminderIfNotExists(member, meeting, NotificationType.MEETING_REMINDER);
             }
 
-            // 2. 3시간 전 리마인더: 정모가 3시간 이내인 경우
             if (isWithinHours(meetingDate, now, 3)) {
                 createReminderIfNotExists(member, meeting, NotificationType.MEETING_IMMINENT);
             }

@@ -11,15 +11,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 /**
- * ============================================================================
  * 모든 엔티티의 공통 부모 클래스 (상속용)
- * ============================================================================
  *
  * [사용 목적]
  * 모든 테이블에 공통으로 들어가는 createdAt, modifiedAt 컬럼을 한 곳에서 관리합니다.
  * Member, Group, Meeting 등 모든 엔티티가 이 클래스를 상속받습니다.
  *
- * [사용 예시]
  *   public class Member extends BaseEntity { ... }
  *   → Member 테이블에 created_at, modified_at 컬럼이 자동으로 추가됨
  *

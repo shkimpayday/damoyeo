@@ -71,9 +71,9 @@ export function SupportChatRoom({
   const [rating, setRating] = useState(0);
   const [showRating, setShowRating] = useState(false);
 
-  // ========================================================================
+
   // 자동 스크롤
-  // ========================================================================
+
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -94,9 +94,9 @@ export function SupportChatRoom({
     }
   }, [chat?.status, chat?.rating, isAdmin]);
 
-  // ========================================================================
+
   // 핸들러
-  // ========================================================================
+
 
   const handleSend = useCallback(() => {
     const trimmed = inputValue.trim();
@@ -129,9 +129,9 @@ export function SupportChatRoom({
     setShowRating(false);
   }, [rating, rateChat]);
 
-  // ========================================================================
+
   // 렌더링
-  // ========================================================================
+
 
   const isCompleted = chat?.status === "COMPLETED";
   const isWaiting = chat?.status === "WAITING";

@@ -13,11 +13,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * ============================================================================
  * 결제 Repository
- * ============================================================================
  *
- * [역할]
  * Payment 엔티티에 대한 DB 접근을 담당합니다.
  *
  * [주요 쿼리]
@@ -27,9 +24,7 @@ import java.util.Optional;
  */
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-    // ========================================================================
     // 기본 조회
-    // ========================================================================
 
     /**
      * 주문번호로 결제 조회
@@ -47,9 +42,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
      */
     Optional<Payment> findByTid(String tid);
 
-    // ========================================================================
     // 회원별 조회
-    // ========================================================================
 
     /**
      * 회원의 결제 내역 조회 (최신순)
@@ -73,9 +66,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "order by p.createdAt desc")
     List<Payment> findApprovedByMemberId(@Param("memberId") Long memberId);
 
-    // ========================================================================
     // 프리미엄 상태 조회
-    // ========================================================================
 
     /**
      * 회원의 활성 프리미엄 결제 조회
@@ -125,9 +116,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findExpiringPremiums(@Param("startTime") LocalDateTime startTime,
                                         @Param("endTime") LocalDateTime endTime);
 
-    // ========================================================================
     // 통계
-    // ========================================================================
 
     /**
      * 특정 기간 내 승인된 결제 수
@@ -168,9 +157,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "and p.premiumEndDate > :now")
     long countActivePremiumMembers(@Param("now") LocalDateTime now);
 
-    // ========================================================================
     // 관리자용
-    // ========================================================================
 
     /**
      * 전체 결제 내역 조회 (관리자용)

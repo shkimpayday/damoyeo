@@ -145,9 +145,9 @@ export default function AdminSupportPage() {
   const [selectedChat, setSelectedChat] = useState<SupportChatDTO | null>(null);
   const [page, setPage] = useState(1);
 
-  // ========================================================================
+
   // Queries
-  // ========================================================================
+
 
   const { data: waitingData, isLoading: isLoadingWaiting } = useQuery({
     queryKey: ["support", "admin", "waiting", page],
@@ -173,9 +173,9 @@ export default function AdminSupportPage() {
     refetchInterval: 30 * 1000,
   });
 
-  // ========================================================================
+
   // Mutations
-  // ========================================================================
+
 
   const assignMutation = useMutation({
     mutationFn: (chatId: number) => supportApi.assignSupportChat(chatId),
@@ -196,9 +196,9 @@ export default function AdminSupportPage() {
     },
   });
 
-  // ========================================================================
+
   // 핸들러
-  // ========================================================================
+
 
   const handleSelectChat = useCallback(
     (chat: SupportChatDTO) => {
@@ -225,9 +225,9 @@ export default function AdminSupportPage() {
     queryClient.invalidateQueries({ queryKey: ["support", "admin"] });
   }, [queryClient]);
 
-  // ========================================================================
+
   // 현재 탭 데이터
-  // ========================================================================
+
 
   const currentData =
     activeTab === "waiting"
@@ -243,9 +243,9 @@ export default function AdminSupportPage() {
         ? isLoadingMyChats
         : isLoadingAll;
 
-  // ========================================================================
+
   // 렌더링
-  // ========================================================================
+
 
   return (
     <div className="flex h-full overflow-hidden">
