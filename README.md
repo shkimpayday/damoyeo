@@ -21,7 +21,7 @@
 소모임(somoim.co.kr)을 참조해서 만든 오프라인 모임 플랫폼입니다.
 기획부터 설계, 구현, 배포 자동화까지 풀스택 1인 개발로 진행했습니다.
 
-주요 기능은 모임 생성/가입, 정기모임(정모) 관리, WebSocket 기반 실시간 채팅, 게시판/갤러리, 카카오페이 결제, 고객 상담 채팅, 관리자 대시보드입니다.
+주요 기능은 모임 생성/가입, 정기모임(정모) 관리, WebSocket 기반 실시간 채팅, 게시판/갤러리, 카카오페이 결제, 고객 상담 채팅, 관리자 대시보드입니다. 회원가입 시 이메일 인증, 카카오 소셜 로그인도 지원합니다.
 
 ---
 
@@ -97,7 +97,7 @@ damoyeo/
 │
 ├── backend/
 │   └── src/main/java/com/damoyeo/api/
-│       ├── domain/            # 비즈니스 도메인 (13개)
+│       ├── domain/            # 비즈니스 도메인 (12개)
 │       └── global/            # Security, WebSocket, JWT 설정
 │
 ├── docker-compose.prod.yml
@@ -125,6 +125,8 @@ cd backend
 VITE_API_HOST=http://localhost:8080
 VITE_KAKAO_CLIENT_ID=카카오_REST_API_키
 ```
+
+Swagger UI: http://localhost:8080/swagger-ui.html
 
 ---
 
