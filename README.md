@@ -134,8 +134,8 @@ Swagger UI: http://localhost:8080/swagger-ui.html
 
 | 구분 | 이메일 | 비밀번호 |
 |------|--------|---------|
-| 일반 사용자 | `demo@damoyeo.store` | `demo1234` |
-| 관리자 | `admin@damoyeo.store` | `admin1234` |
+| 일반 사용자 | `demo@damoyeo.store` | `admin` |
+| 관리자 | `admin@damoyeo.store` | `admin` |
 
 ---
 
